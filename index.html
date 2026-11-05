@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#101014">
@@ -53,8 +55,16 @@
       margin: 0 auto 12px;
     }
     h1 { margin: 0 0 8px; font-size: 30px; letter-spacing: .04em; }
-    .subtitle { margin: 0 0 28px; color: #b5b5be; font-size: 14px; line-height: 1.5; }
-    .links { display: grid; gap: 12px; }
+    .subtitle {
+      margin: 0 0 28px;
+      color: #b5b5be;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+    .links {
+      display: grid;
+      gap: 12px;
+    }
     .link {
       display: grid;
       grid-template-columns: 24px 100px;
@@ -69,21 +79,35 @@
       background: #282830;
       color: #fff;
       text-decoration: none;
-      font-weight: 700;
+      font-size: 12px;
+      font-weight: 250;
       transition: background .15s ease, border-color .15s ease;
     }
     .link:hover, .link:focus-visible { background: #383843; border-color: #aaaab7; }
-    .link-icon { width: 24px; height: 24px; object-fit: contain; flex: 0 0 24px; }
-    .footer { margin: 24px 0 0; font-size: 12px; color: #858590; }
+    .link-icon {
+      width: 24px;
+      height: 24px;
+      object-fit:
+      contain;
+      flex: 0 0 24px;
+    }
+    .footer {
+      margin: 24px 0 0;
+      font-size: 12px;
+      color: #858590;
+    }
     .footer a {
-    color: inherit;
-    text-decoration: none;
+      color: inherit;
+      text-decoration: none;
     }
     .footer a:hover {
-    color: #ffffff;
+      color: #ffffff;
     }
     @media (max-width: 380px) { .card { padding: 26px 16px 22px; } }
+
+    body, button, a {font-family: 'IBM Plex Mono', 'Courier New', monospace;}
   </style>
+
 </head>
 
 <script>
@@ -117,48 +141,84 @@
       <!-- Duplicate or remove these example links as needed. -->
       
       <!-- LINK IN BIO -->
-      <a class="link" href="https://youtu.be/c9wtnkt-J_0?si=Xd6tFjqSpEEki9AY" target="_blank" rel="noopener noreferrer">
+      <a
+        class="link"
+        href="https://youtu.be/c9wtnkt-J_0?si=Xd6tFjqSpEEki9AY"
+        target="_blank"
+        rel="noopener noreferrer">
         <img class="link-icon" src="images/Li.png" alt=""> Link in Bio
       </a>
 
       <!-- BUY ME A COFFEE -->
-      <a class="link" href="https://ko-fi.com/faml_i" target="_blank" rel="noopener noreferrer">
+      <a
+        class="link"
+        href="https://ko-fi.com/faml_i"
+        target="_blank"
+        rel="noopener noreferrer">
         <img class="link-icon" src="images/C.png" alt=""> Buy Me A Coffee
       </a>
 
       <!-- YOUTUBE -->
-      <a class="link" href="youtube.html" target="_blank" rel="noopener noreferrer">
+      <a
+        class="link"
+        href="youtube.html"
+        target="_blank"
+        rel="noopener noreferrer">
         <img class="link-icon" src="images/PLAY.png" alt=""> YouTube
       </a>
 
       <!-- SHOWREEL -->
-      <a class="link" href="https://www.youtube.com/watch?v=-0avWqn8cH4" target="_blank" rel="noopener noreferrer">
+      <a
+        class="link"
+        href="https://www.youtube.com/watch?v=-0avWqn8cH4"
+        target="_blank"
+        rel="noopener noreferrer">
       <img class="link-icon" src="images/S.png" alt=""> Showreel
       </a>
 
       <!-- BOOKING -->
-      <a class="link" href="https://www.instagram.com/arnobbal" target="_blank" rel="noopener noreferrer">
+      <a
+        class="link"
+        href="https://www.instagram.com/arnobbal"
+        target="_blank"
+        rel="noopener noreferrer">
       <img class="link-icon" src="images/B.png" alt=""> Booking
       </a>
 
       <!-- RELEASES -->
-      <a class="link" href="https://famli.bandcamp.com/" target="_blank" rel="noopener noreferrer">
+      <a
+        class="link"
+        href="https://famli.bandcamp.com/"
+        target="_blank"
+        rel="noopener noreferrer">
       <img class="link-icon" src="images/R.png" alt=""> Releases
       </a>
 
       <!-- RESIDENT ADVISOR -->
-      <a class="link" href="https://ra.co/dj/famli" target="_blank" rel="noopener noreferrer">
+      <a
+        class="link"
+        href="https://ra.co/dj/famli"
+        target="_blank"
+        rel="noopener noreferrer">
       <img class="link-icon" src="images/R.png" alt=""> RA
       </a>
 
       <!-- INSTAGRAM -->
-      <a class="link" href="https://www.instagram.com/faml_i/" target="_blank" rel="noopener noreferrer">
+      <a
+        class="link"
+        href="https://www.instagram.com/faml_i/"
+        target="_blank"
+        rel="noopener noreferrer">
         <!-- To add an icon, uncomment the next line and change the filename: -->
         <img class="link-icon" src="images/IG.png" alt=""> Instagram
       </a>
 
       <!-- TIKTOK -->
-      <a class="link" href="https://www.tiktok.com/@faml_i" target="_blank" rel="noopener noreferrer">
+      <a
+        class="link"
+        href="https://www.tiktok.com/@faml_i"
+        target="_blank"
+        rel="noopener noreferrer">
         <!-- To add an icon, uncomment the next line and change the filename: -->
         <img class="link-icon" src="images/T.png" alt=""> TikTok
       </a>
