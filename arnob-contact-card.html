@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0a0c10">
+  <meta name="description" content="Arnob Bal — Multidisciplinary Creative Professional | Multimedia Production & Design">
+
+  <title>Arnob Bal — Contact</title>
+
+  <style>
+    :root {
+      color-scheme: dark;
+      --text:#eef0f3;
+      --muted:#a5adb9;
+      --line:rgba(231,239,255,.20);
+      --accent:#c6e4e3;
+    }
+    * { box-sizing:border-box; }
+    html,body { min-height:100%; margin:0; }
+    body {
+      display:grid;
+      place-items:center;
+      padding:24px;
+      color:var(--text);
+      font-family:"IBM Plex Mono","SFMono-Regular",Consolas,"Liberation Mono",monospace;
+      background:
+        radial-gradient(ellipse at 24% 16%,#243139 0%,transparent 43%),
+        radial-gradient(ellipse at 85% 90%,#20202d 0%,transparent 42%),#0a0c10; }
+    body::before { content:"";
+      position:fixed;
+      inset:0;
+      pointer-events:none;
+      opacity:.22;
+      background-image:
+        linear-gradient(rgba(255,255,255,.028) 1px,transparent 1px),
+        linear-gradient(90deg,rgba(255,255,255,.028) 1px,transparent 1px);
+        background-size:38px 38px; }
+        .card { width:min(100%,490px);
+        aspect-ratio:1; display:flex;
+        flex-direction:column;
+        justify-content:space-between;
+        position:relative;
+        padding:clamp(25px,6vw,43px);
+        border:1px solid var(--line);
+        border-radius:12px;
+        background:rgba(210,224,245,.055);
+        box-shadow:0 28px 90px rgba(0,0,0,.33), inset 0 1px 0 rgba(255,255,255,.08);
+        backdrop-filter:blur(18px);
+        -webkit-backdrop-filter:blur(18px);
+      }
+      .eyebrow {
+        font-size:10px;
+        letter-spacing:.21em; color:var(--accent);
+        text-transform:uppercase;
+      }
+      .main { margin:auto 0; }
+    h1 { margin:0 0 24px;
+      font-size:clamp(36px,8vw,57px);
+      letter-spacing:-.065em;
+      line-height:1.03;
+      font-weight:500;
+    }
+    .role { font-size:clamp(12px,2.6vw,15px);
+      line-height:1.8;
+      color:var(--text);
+    }
+    .specialty { color:var(--muted);
+      margin-top:7px;
+      font-size:clamp(11px,2.3vw,13px);
+      line-height:1.7;
+    }
+    .links { display:flex;
+      flex-wrap:wrap;
+      gap:9px;
+      padding-top:20px;
+      border-top:1px solid var(--line);
+    }
+    .links a { text-decoration:none;
+      color:var(--text);
+      border:1px solid var(--line);
+      padding:11px 13px;
+      border-radius:4px;
+      font-size:11px;
+      letter-spacing:.035em;
+      transition:background .18s,border-color .18s,transform .18s;
+    }
+    .links a:hover,
+    .links a:focus-visible {
+      background:rgba(198,228,227,.12);
+      border-color:var(--accent);
+      transform:translateY(-2px);
+      outline:none; 
+    }
+    .links a::after {
+      content:" ↗";
+      color:var(--accent);
+    }
+    @media (max-width:420px) { body {padding:14px;}
+      .card {padding:25px;}
+      .links {gap:6px;}
+      .links a {padding:10px; font-size:10px;} }
+    @media (prefers-reduced-motion:reduce) { .links a {transition:none;} }
+  </style>
+
+</head>
+
+<body>
+  <main class="card" aria-label="Arnob Bal contact card">
+    <div class="eyebrow">// CONTACT CARD</div>
+    <div class="main">
+      <h1>Arnob Bal</h1>
+      <div class="role">Multimedia Artist | Creative Technologist</div>
+      <div class="specialty">+1 647 627 6176 Canada / Signal</div>
+      <div class="specialty">+91 75063 04195 India / WhatsApp</div>
+      <div class="specialty">arnob@flossdailyproductions.com</div>
+      <div class="specialty">www.flossdailyproductions.com</div>      
+    </div>
+    <nav class="links" aria-label="Contact links">
+      <!-- Replace the placeholder email and LinkedIn URL below with your actual details. -->
+      <a href="https://www.flossdailyproductions.com/" target="_blank" rel="noopener noreferrer">PORTFOLIOS</a>
+      <a href="https://www.instagram.com/arnobbal/" target="_blank" rel="noopener noreferrer">INSTAGRAM
+      <a href="https://www.linkedin.com/in/arnob-bal-61413695/" target="_blank" rel="noopener noreferrer">LINKEDIN</a>
+    </nav>
+  </main>
+</body>
+</html>
