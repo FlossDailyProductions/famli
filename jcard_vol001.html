@@ -1,0 +1,679 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FamLi — J-Card Generator</title>
+<style>
+
+:root{
+	color-scheme:dark;
+	font-family:'Lucida Console',Monaco,monospace;
+	background:#101015;color:#e6f9f7
+	}
+	*{box-sizing:border-box}
+	body{margin:0}
+	header{padding:19px 26px;
+		border-bottom:1px solid #34333e;
+		display:flex;
+		justify-content:space-between;
+		gap:10px;
+		align-items:center
+	}
+	header strong{letter-spacing:.08em}
+	header span{font-size:11px;color:#a7a4b5}
+		.app{display:grid;
+			grid-template-columns:300px
+			minmax(0,1fr);
+			min-height:calc(100vh - 62px)
+		}
+	aside{padding:22px;
+		border-right:1px solid #34333e;
+		overflow:auto}
+	main{display:flex;
+		flex-direction:column;
+		align-items:center;
+		justify-content:flex-start;
+		padding:24px;gap:14px;
+		background:#191820
+		}
+	canvas{width:min(100%,790px);
+		height:auto;aspect-ratio:1;
+		box-shadow:0 18px 55px #0008;
+		image-rendering:auto
+		}
+	.note{font-size:11px;
+		color:#9e9ba9;
+		line-height:1.6;
+		max-width:790px
+		}
+	h2{font-size:13px;
+		margin:0 0 22px;
+		letter-spacing:.08em
+		}
+	.field{margin:0 0 19px}
+	.field 
+	label{display:flex;
+		justify-content:space-between;
+		font-size:12px;
+		margin-bottom:8px;color:#d2d0db}
+	.field 
+	output{color:#a8fff3}
+	input[type=range]{width:100%;accent-color:#c8fff6;touch-action:pan-x}
+	select,
+	input[type=text],
+	input[type=number]{background:#22212b;
+		border:1px solid #494753;
+		color:white;
+		padding:10px;
+		width:100%;
+		font:inherit;
+		font-size:12px
+		}
+	button{border:1px solid #777583;
+		background:#252430;
+		color:#e7fdf9;
+		font:inherit;
+		font-size:12px;
+		padding:12px;
+		cursor:pointer
+		}
+	button:hover{background:#363542}
+		.primary{background:#d8fff6;
+			color:#171820;
+			border-color:#d8fff6}
+			.actions{display:grid;
+				grid-template-columns:1fr 1fr;
+				gap:8px;
+				margin:22px 0
+			}
+			.actions
+			.primary{grid-column:1/-1}
+			.small{font-size:11px;
+				color:#aaa7b8;
+				line-height:1.6
+			}
+			.row{display:grid;
+				grid-template-columns:1fr 1fr;
+				gap:8px
+			}
+			.divider{height:1px;
+				background:#34333e;
+				margin:22px 0
+			}
+			@media(max-width:800px){
+				.app{display:flex; flex-direction:column-reverse}
+	aside{border-right:0;border-top:1px solid #34333e}
+	main{padding:12px}
+	header{padding:14px}
+}
+</style>
+</head>
+
+<body>
+	<header>
+		<strong>FamLi - practice volume 1</strong>
+		<span>J-CARD GENERATOR v1.0.6</span>
+	</header>
+	<div class="app">
+		<aside>
+			<h2>// GENERATIVE CONTROLS</h2>
+			<div id="sliders"></div>
+			<div class="divider"></div>
+
+            <h2>// PRINT EXPORT</h2>
+            <div class="field">
+            	<label for="paper">
+            		PAPER SIZE
+            	</label>
+            	<select id="paper">
+            		<option value="letter">
+            			US LETTER · 8.5 × 11 IN
+            		</option>
+            		<option value="a4">
+            			A4 · 210 × 297 MM
+            		</option>
+            	</select>
+            </div>
+
+            <div class="field">
+            	<label for="duplex">
+            		DUPLEX FLIP
+            	</label>
+            	<select id="duplex">
+            		<option value="long">
+            			LONG EDGE (RECOMMENDED)
+            		</option>
+            		<option value="short">
+            			SHORT EDGE
+            		</option>
+            	</select></div>
+            
+            <div class="field">
+            	<label>
+            		<span>TRIM + FOLD GUIDES</span>
+            		<input type="checkbox" id="guides" checked>
+            	</label>
+            </div>
+            
+            <button id="pdf" class="primary" style="width:100%;margin-bottom:12px">
+            	EXPORT PRINT PDF · 2 PAGES
+        	</button>
+
+            <div class="actions">
+				<button id="random">
+				RANDOMIZE</button><button id="reset">RESET</button><button id="download" class="primary">EXPORT PNG · 3600 PX</button>
+			</div>
+			
+			<p class="small">
+				Floss Daily Productions 2026
+			</p>
+
+		</aside>
+		<main>
+			<canvas id="art" width="1200" height="1200"></canvas>
+			<div class="note">
+				· FamLi - practice volume 1 · UNFOLDED J-CARD · FLAP / SPINE / FRONT ·
+			</div>
+		</main>
+	</div>
+
+<script>
+const RELEASE_TITLE='practice vol001';
+const SPINE_TITLE='practice volume 1';
+const defaults={
+	seed:.588,
+	palette:.262,
+	variety:.727,
+	intensity:.624,
+	rolloff:.385,
+	zoom:.055,
+	form:.24,
+	label:.152,
+	backdropHue:282,
+	backdropSaturation:17,
+	backdropLightness:24
+};
+let state={...defaults};
+let assets={};
+const canvas=document.getElementById('art'), 
+	  ctx=canvas.getContext('2d');
+const controls=[
+		['seed','ROTATIONS'],
+		['palette','PALETTE'],
+		['variety','COMPLEXITY'],
+		['intensity','INTENSITY'],
+		['rolloff','ROLL OFF'],
+		['zoom','ZOOM'],
+		['form','FORM'],
+		['label','LABEL'],
+        ['backdropHue','BG HUE'],
+        ['backdropSaturation','BG SAT'],
+        ['backdropLightness','BG LEVEL']
+	];
+const holder=document.getElementById('sliders');
+const backdropControls=new
+Set(['backdropHue','backdropSaturation','backdropLightness']);
+const controlMaximum =key => key==='backdropHue'?360:backdropControls.has(key)?100:1;
+const controlStep    =key => backdropControls.has(key)?1:.001;
+const controlDisplay =key => backdropControls.has(key)?String(Math.round(state[key])):state[key].toFixed(3);
+for(const [key,name] of controls){
+	const d=document.createElement('div');
+	d.className='field';
+	d.innerHTML=`<label>${name}
+		<output id="v-${key}">${controlDisplay(key)}
+		</output></label><input id="s-${key}"
+		type="range"
+		min="0"
+		max="${controlMaximum(key)}"
+		step="${controlStep(key)}"
+		value="${state[key]}">`;
+	holder.append(d);
+	d.querySelector('input').addEventListener('input',e=>{state[key]=+e.target.value;
+	d.querySelector('output').textContent=controlDisplay(key);scheduleDraw()})
+	}
+// Same-origin image assets for the hosted version.
+// Open over HTTPS (or a local HTTP server), not file://, to allow canvas exports.
+const files={
+			li:'images/li-primitive.png',
+			famli:'images/famli-wordmark.png',
+			vertical:'images/famli-vertical-wordmark.png',
+			floss:'images/floss-daily-logo.png'
+			};
+for(const [key,url] of Object.entries(files)){
+	const im=new Image();
+	im.onload=()=>{assets[key]=im;
+	scheduleDraw()};
+	im.src=url
+	}
+
+const clamp=(x,a=0,b=1)=>Math.max(a,Math.min(b,x));
+
+function hash(x,y,s){
+	let t=Math.sin(x*127.1+y*311.7+s*74.7)*43758.5453123;
+	return t-Math.floor(t)
+	}
+
+function smooth(t){
+	return t*t*(3-2*t)
+	}
+
+function noise(x,y,s){
+	let ix=Math.floor(x),iy=Math.floor(y),
+	fx=smooth(x-ix),fy=smooth(y-iy);
+	let a=hash(ix,iy,s),
+	b=hash(ix+1,iy,s),
+	c=hash(ix,iy+1,s),
+	d=hash(ix+1,iy+1,s);
+	return (a+(b-a)*fx)*(1-fy)+(c+(d-c)*fx)*fy}
+
+// Colour architecture: col_palette (RGB palette) and col_dist (greyscale
+// lookup coordinate) are independent, as in the original TouchDesigner patch.
+// This uses deterministic smooth value noise, not TD's GPU Perlin 4D kernel.
+function paletteRGB(t){
+    const period=0.25+state.variety*12;
+    const seed=Math.floor(state.palette*999);
+    const exponent=Math.max(0.04,4*state.rolloff);
+    const amplitude=2*state.intensity;
+    const offset=.453;
+    return [0,1,2].map(channel=>{
+        // Independent, correlated colour channels from the same seeded field.
+        const n=noise(t*period+channel*11.73,channel*3.17,seed+channel*53);
+        const signed=(n-.5)*2;
+        const shaped=Math.sign(signed)*Math.pow(Math.abs(signed),exponent);
+        return clamp(offset+amplitude*shaped*.5);
+    });
+}
+function distribution(x,y){
+    // FORM: seed of col_dist. ZOOM: period of col_dist.
+    // TD's exact period-to-image coordinate mapping requires calibration.
+    const seed=Math.floor(state.form*999);
+    const effectiveZoom=0.10+state.zoom*3.0; // 0..1 UI maps to old 0.10..1.50
+    const period=Math.max(.005,.01+effectiveZoom*.42);
+    const n=noise(x*period,y*period,seed+1709);
+    const signed=(n-.5)*2;
+    return clamp(.254+1.03*Math.sign(signed)*Math.pow(Math.abs(signed),1.15)*.5);
+}
+function backdropColor(){return `hsl(${state.backdropHue} ${state.backdropSaturation}% ${state.backdropLightness}%)`;}
+function cssRGB(rgb){return 'rgb('+rgb.map(v=>Math.round(clamp(v)*255)).join(',')+')'}
+function labelRGB(){
+    // crop2 -> constant9: divide sampled RGB by perfect grey (0.5).
+    return paletteRGB(state.label).map(v=>clamp(v/.5));
+}
+
+function drawImageContain(c,img,x,y,w,h){
+	if(!img)return;let scale=Math.min(w/img.width,h/img.height);
+	let iw=img.width*scale,ih=img.height*scale;
+	c.drawImage(img,x+(w-iw)/2,y+(h-ih)/2,iw,ih)
+	}
+
+function label(c,text,x,y,size=25,align='left'){
+	c.font=`${size}px 'Lucida Console',Monaco,monospace`;
+	c.textAlign=align;
+	c.fillStyle='#ffffff';
+	c.fillText(text,x,y)
+	}
+
+function rotateLabel(c,text,x,y,angle,size=23){
+	c.save();c.translate(x,y);
+	c.rotate(angle);
+	label(c,text,0,0,size);
+	c.restore()
+	}
+
+// Preview-only caches. High-resolution PNG/PDF exports still render afresh.
+const previewPattern=document.createElement('canvas');
+previewPattern.width=previewPattern.height=1200;
+const previewTile=document.createElement('canvas');
+previewTile.width=previewTile.height=120;
+const previewOverlay=document.createElement('canvas');
+previewOverlay.width=previewOverlay.height=1200;
+const previewAlpha=document.createElement('canvas');
+previewAlpha.width=previewAlpha.height=1200;
+let patternCacheKey=null;
+let drawQueued=false;
+function scheduleDraw(){
+    if(drawQueued)return;
+    drawQueued=true;
+    requestAnimationFrame(()=>{drawQueued=false;draw();});
+}
+function render(c,size,patternOnly=false){
+	const S=size/1200;
+	c.save();
+	c.setTransform(S,0,0,S,0,0);
+	c.fillStyle=backdropColor();
+	c.fillRect(0,0,1200,1200);
+	const tile=43,cols=Math.ceil(1200/tile),rows=Math.ceil(1200/tile);
+	const seed=Math.floor(state.seed*9999);
+	const freq=1.4; // Rotation field fixed at the old Variety minimum.
+	// Rotation is independent of all palette and distribution controls.
+	const shape=assets.li;
+
+	// One continuous field across all three J-card panels.
+
+    const isPreview=(c===ctx && size===1200 && !patternOnly);
+    const patternKey=[state.seed,state.palette,state.variety,state.intensity,state.rolloff,state.zoom,state.form,!!shape].join('|');
+    if(isPreview){
+        if(patternCacheKey!==patternKey){
+            const pc=previewPattern.getContext('2d');
+            pc.setTransform(1,0,0,1,0,0);
+            pc.clearRect(0,0,1200,1200);
+            drawPattern(pc);
+            patternCacheKey=patternKey;
+        }
+        c.drawImage(previewPattern,0,0);
+    }else{
+        drawPattern(c);
+    }
+    function drawPattern(target){
+	if(shape){const colored=previewTile;const cc=colored.getContext('2d');
+		for(let y=0;y<rows;y++)
+			for(let x=0;x<cols;x++){
+				let n=noise(x/freq,y/freq,seed);
+				let q=noise(x/.55,y/.55,seed+73);
+				let orientation=Math.floor(clamp(n*.62+q*.38)*4);
+				let color=cssRGB(paletteRGB(distribution(x,y)));
+				cc.clearRect(0,0,120,120);
+				cc.fillStyle=color;
+				cc.fillRect(0,0,120,120);
+				cc.globalCompositeOperation='destination-in';
+				cc.drawImage(shape,0,0,120,120);cc.globalCompositeOperation='source-over';
+				target.save();
+				target.translate(x*tile+tile/2,y*tile+tile/2);
+				target.rotate(orientation*Math.PI/2);
+				const liScale = 1.05; // 8% larger than the grid cell
+				const liSize = tile * liScale;
+				target.drawImage(colored,-liSize/2,-liSize/2,liSize,liSize);
+				target.restore()
+				}
+			}
+
+    }
+
+    if(patternOnly){c.restore();return;}
+
+	// Layout pass: measured against the supplied 1240px reference image.
+	// All coordinates are normalized to the 1200 x 1200 design surface.
+	// The procedural field above is intentionally unchanged in this version.
+
+	const ink='#ffffff', panel=backdropColor();
+
+	c.fillStyle=panel;
+
+	// Flap dark inset, with patterned margins left and right.
+
+	c.beginPath();
+	c.roundRect(76,58,195,1085, 25);
+	c.fill();
+
+	// Front logo's solid dark field, with no artificial panel divider lines.
+
+	c.beginPath();
+	c.roundRect(535,197,587,200, 25);
+	c.fill();
+
+    // Opaque backing panels are drawn on the artwork, NOT in the tinted overlay.
+    // This keeps the panels the same dark plum as the other backing areas.
+// Three independent, centred spine backing panels.
+// Keep the procedural pattern visible between them.
+
+c.fillStyle=panel;
+
+// Floss Daily Logo
+c.beginPath();
+c.roundRect(315, 52, 139, 136, 25);
+c.fill();
+
+// Title
+c.beginPath();
+c.roundRect(350, 288, 53, 400, 15);
+c.fill();
+
+// Vertical Wordmark
+c.beginPath();
+c.roundRect(314, 790, 148, 355, 30);
+c.fill();
+
+
+    // All typography and wordmarks are first rendered as one transparent
+    // greyscale overlay, then multiplied by the sampled/amplified label colour.
+    const overlay=isPreview?previewOverlay:document.createElement('canvas');
+    overlay.width=1200; overlay.height=1200;
+    const oc=overlay.getContext('2d');
+    oc.setTransform(1,0,0,1,0,0);
+    oc.globalCompositeOperation='source-over';
+    oc.clearRect(0,0,1200,1200);
+    // Local alias: all following branding drawing targets the overlay.
+    {
+    const originalContext=c;
+    c=oc;
+	// Flap text: local X extends upward on the J-card; local Y offsets columns rightward.
+
+function verticalBlock(x,y,heading,lines){
+	c.save();
+	c.translate(x,y);
+	c.rotate(-Math.PI/2);
+ 	label(c,heading,0,0,29);
+ 	c.font="17px 'Lucida Console',Monaco,monospace";
+ 	c.textAlign='left';
+ 	c.fillStyle=ink;
+ 	lines.forEach((t,i)=>c.fillText(t,0,25+i*20));
+ 	c.restore();
+	}
+	verticalBlock(110,1125,'SIDE A',
+		[
+	 	'010826 sus vibes only',
+	 	'290726 Tomas Haake stole my step sequencer',
+	 	'310726 I would like to propose a toast...',
+	 	'310726 owl house fly',
+	 	'160726 snake charms',
+	 	'020726 either side number 1',
+	 	'280726 hopeless'
+		]);
+	verticalBlock(110,586,'SIDE B',
+		[
+	 	'280726 rhinosuseros',
+	 	'010826 last foot in front of the next foot',
+	 	'300626 sinking ship',
+	 	'160726 don\'t forget to pack your space lunch',
+	 	'020726 post sus clarity',
+	 	'020726 escape plan // escape'
+	 	]);
+
+// Spine is approximately x=267..421 in the reference.
+
+rotateLabel(c,SPINE_TITLE,365,302,Math.PI/2,37);
+
+// Front: fixed brand hierarchy, all positioned relative to the reference.
+
+if(assets.floss)drawImageContain(c,assets.floss,328,62,120,120);
+if(assets.famli)drawImageContain(c,assets.famli,545,200,565,155);
+label(c,'@faml_i',545,385,33);
+label(c, RELEASE_TITLE,815,385,33);
+if(assets.vertical)drawImageContain(c,assets.vertical,326,775,122,380);
+    // Multiply the entire grayscale overlay by the one shared label colour.
+    // White type takes the tint; grey logo pixels retain their tonal detail.
+    const alphaMask=isPreview?previewAlpha:document.createElement('canvas');
+    alphaMask.width=1200;alphaMask.height=1200;
+    const ac=alphaMask.getContext('2d');
+    ac.clearRect(0,0,1200,1200);
+    ac.drawImage(overlay,0,0);
+    oc.globalCompositeOperation='multiply';
+    oc.fillStyle=cssRGB(labelRGB());
+    oc.fillRect(0,0,1200,1200);
+    oc.globalCompositeOperation='destination-in';
+    // Rebuild original alpha mask to avoid tinting transparent regions.
+    // The mask is retained before the multiply pass (see below).
+    oc.drawImage(alphaMask,0,0);
+    oc.globalCompositeOperation='source-over';
+    originalContext.drawImage(overlay,0,0);
+    c=originalContext;
+    }
+    c.restore();
+}
+
+function draw(){
+    render(ctx,1200);
+}
+document.getElementById('random').onclick=()=>{state.seed=Math.random();
+state.palette=Math.random();
+state.form=Math.random();
+state.backdropHue=Math.floor(Math.random()*361);
+state.backdropSaturation=Math.floor(Math.random()*41);
+state.backdropLightness=12+Math.floor(Math.random()*25);
+sync()};
+document.getElementById('reset').onclick=()=>{state={...defaults};
+sync()};
+function sync(){for(const [key] of controls){
+	document.getElementById('s-'+key).value=state[key];
+	document.getElementById('v-'+key).textContent=controlDisplay(key)}
+	draw()
+	}
+
+document.getElementById('download').onclick=()=>{const out=document.createElement('canvas');
+out.width=3600;out.height=3600;
+render(out.getContext('2d'),3600);
+const a=document.createElement('a');
+a.download='famli-jcard-'+Math.round(state.seed*9999)+'.png';
+a.href=out.toDataURL('image/png');
+a.click()};
+
+// Standalone two-page PDF writer: JPEG artwork embedded as PDF image XObjects.
+// No network access, external PDF libraries or browser print scaling required.
+const PDF_MM=72/25.4;
+function pdfBytesFromCanvas(can,quality=.95){
+  const data=can.toDataURL('image/jpeg',quality).split(',')[1];
+  const raw=atob(data),bytes=new Uint8Array(raw.length);
+  for(let i=0;i<raw.length;i++)bytes[i]=raw.charCodeAt(i);
+  return bytes;
+}
+function buildPrintPDF(){
+  if(Object.keys(files).some(k=>!assets[k])){alert('Artwork assets are still loading. Try again in a moment.');return;}
+  const paper=document.getElementById('paper').value;
+  const duplex=document.getElementById('duplex').value;
+  const guides=document.getElementById('guides').checked;
+  const pageW=paper==='a4'?210:215.9,pageH=paper==='a4'?297:279.4;
+  const artW=101.1682,artH=101.6;
+  const x=(pageW-artW)/2;
+  // Instructions occupy the upper half; artwork occupies the lower half.
+  const y=pageH*.62;
+  const yReverse=duplex==='short'?pageH-y-artH:y;
+  const scale=2; // 2400px source raster, approximately 600 dpi at printed size.
+  const front=document.createElement('canvas');front.width=1200*scale;front.height=1200*scale;
+  render(front.getContext('2d'),front.width,false);
+  const back=document.createElement('canvas');back.width=1200*scale;back.height=1200*scale;
+  render(back.getContext('2d'),back.width,true);
+  const frontJpg=pdfBytesFromCanvas(front),backJpg=pdfBytesFromCanvas(back);
+  const objects=[];
+  const enc=new TextEncoder();
+  const ascii=s=>enc.encode(s);
+  function concat(parts){let len=parts.reduce((a,p)=>a+p.length,0),out=new Uint8Array(len),at=0;for(const p of parts){out.set(p,at);at+=p.length;}return out;}
+  function add(content){objects.push(typeof content==='string'?ascii(content):content);return objects.length;}
+  function imageObj(bytes,w,h){return add(concat([ascii(`<< /Type /XObject /Subtype /Image /Width ${w} /Height ${h} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${bytes.length} >>\nstream\n`),bytes,ascii('\nendstream')]));}
+  const image1=imageObj(frontJpg,front.width,front.height),image2=imageObj(backJpg,back.width,back.height);
+  const font=add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>');
+  const bold=add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>');
+  const esc=s=>s.replace(/\\/g,'\\\\').replace(/\(/g,'\\(').replace(/\)/g,'\\)');
+  const mm=v=>(v*PDF_MM).toFixed(3);
+  function lineText(text,x,top,pt=9,isBold=false){return `BT /${isBold?'FB':'F'} ${pt} Tf 1 0 0 1 ${mm(x)} ${mm(pageH-top)} Tm (${esc(text)}) Tj ET\n`;}
+  function rules(cx,cy,includeFold,mirrorFold=false){
+    if(!guides)return '';
+    const L=cx,R=cx+artW,T=cy,B=cy+artH,g=3.5,l=3;
+    let s='0.35 w 0.28 0.28 0.28 RG\n';
+    const seg=(x1,y1,x2,y2)=>`${mm(x1)} ${mm(pageH-y1)} m ${mm(x2)} ${mm(pageH-y2)} l S\n`;
+    for(const [xx,dir] of [[L,-1],[R,1]])for(const [yy,ydir] of [[T,-1],[B,1]]){
+      s+=seg(xx+dir*g,yy,xx+dir*(g+l),yy);
+      s+=seg(xx,yy+ydir*g,xx,yy+ydir*(g+l));
+    }
+    if(includeFold){
+      // Strong, visible fold ticks OUTSIDE the image, on BOTH edges.
+      // Fold locations measured from the left edge: 25.40 mm and 38.10 mm.
+      // On the reverse side, long-edge duplex mirrors their X positions.
+      const foldOffsets=mirrorFold?[artW-25.4,artW-38.1]:[25.4,38.1];
+      s+='0.9 w 0.12 0.12 0.12 RG\n';
+      for(const offset of foldOffsets){
+        const fx=L+offset;
+        s+=seg(fx,T-8,fx,T-1.2);
+        s+=seg(fx,B+1.2,fx,B+8);
+      }
+    }
+    return s;
+  }
+  function artCmd(img,x0,y0){return `q ${mm(artW)} 0 0 ${mm(artH)} ${mm(x0)} ${mm(pageH-y0-artH)} cm /${img} Do Q\n`;}
+  let frontCmd='0 0 0 rg\n';
+  frontCmd+=lineText('FAMLI / J-CARD PRINT GUIDE',18,18,15,true);
+  frontCmd+=lineText('Two-sided cassette J-card  |  '+(paper==='a4'?'A4':'US Letter')+'  |  1:1 actual size',18,26,9);
+  frontCmd+=lineText('01   PRINT',18,40,10,true);
+  frontCmd+=lineText('Print BOTH pages at Actual Size / 100%. Disable Fit to Page.',18,47,9);
+  frontCmd+=lineText('Use duplex printing: flip on '+(duplex==='long'?'LONG':'SHORT')+' edge. Keep both pages upright.',18,53,9);
+  frontCmd+=lineText('02   PAPER',18,66,10,true);
+  frontCmd+=lineText('Try matte 160-200 gsm card stock, if supported by your printer.',18,73,9);
+  frontCmd+=lineText('For inkjet printing, choose the correct paper type / quality setting.',18,79,9);
+  frontCmd+=lineText('03   CUT + FOLD',18,92,10,true);
+  frontCmd+=lineText('Trim to the artwork boundary. Crop marks sit OUTSIDE the cut.',18,99,9);
+  frontCmd+=lineText('Score gently at both fold ticks, then fold around the cassette case.',18,105,9);
+  frontCmd+=lineText('04   CHECK ALIGNMENT',18,118,10,true);
+  frontCmd+=lineText('First test on ordinary paper. Hold to light to inspect registration.',18,125,9);
+  frontCmd+=lineText('Home duplex printers can shift the reverse by a few millimetres.',18,131,9);
+  frontCmd+=lineText('ARTWORK: 101.17 x 101.60 mm  /  FOLD AT 25.40 + 12.70 mm',18,143,8,true);
+  frontCmd+=artCmd('Im1',x,y)+rules(x,y,true);
+  const backCmd=artCmd('Im2',x,yReverse)+rules(x,yReverse,true,duplex==='long');
+  function streamObj(s){const b=ascii(s);return add(concat([ascii(`<< /Length ${b.length} >>\nstream\n`),b,ascii('\nendstream')]));}
+  const content1=streamObj(frontCmd),content2=streamObj(backCmd);
+  const pagesId=objects.length+1;
+  const page1=pagesId+1,page2=pagesId+2,catalogId=pagesId+3;
+  add(`<< /Type /Pages /Kids [${page1} 0 R ${page2} 0 R] /Count 2 >>`);
+  for(const [im,content] of [[image1,content1],[image2,content2]])add(`<< /Type /Page /Parent ${pagesId} 0 R /MediaBox [0 0 ${mm(pageW)} ${mm(pageH)}] /Resources << /XObject << /${im===image1?'Im1':'Im2'} ${im} 0 R >> /Font << /F ${font} 0 R /FB ${bold} 0 R >> >> /Contents ${content} 0 R >>`);
+  add(`<< /Type /Catalog /Pages ${pagesId} 0 R >>`);
+  const chunks=[ascii('%PDF-1.4\n%FAMLI\n')],offsets=[0];let pos=chunks[0].length;
+  for(let i=0;i<objects.length;i++){
+    offsets.push(pos);
+    const block=concat([ascii(`${i+1} 0 obj\n`),objects[i],ascii('\nendobj\n')]);
+    chunks.push(block);pos+=block.length;
+  }
+  const xref=pos;
+  let trailer=`xref\n0 ${objects.length+1}\n0000000000 65535 f \n`;
+  for(let i=1;i<offsets.length;i++)trailer+=String(offsets[i]).padStart(10,'0')+' 00000 n \n';
+  trailer+=`trailer\n<< /Size ${objects.length+1} /Root ${catalogId} 0 R >>\nstartxref\n${xref}\n%%EOF\n`;
+  chunks.push(ascii(trailer));
+  const blob=new Blob(chunks,{type:'application/pdf'});
+  const url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download='famli-jcard-print-'+paper+'-'+duplex+'.pdf';
+  document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),30000);
+}
+const pdfButton=document.getElementById('pdf');
+// Wait for all embedded artwork assets to finish decoding before export.
+async function ensureAssetsReady(){
+  await Promise.all(Object.entries(files).map(async ([key,url])=>{
+    if(assets[key]?.complete && assets[key].naturalWidth) return;
+    const img=new Image();
+    img.src=url;
+    await img.decode();
+    assets[key]=img;
+  }));
+}
+pdfButton.onclick=async()=>{
+  const original=pdfButton.textContent;
+  pdfButton.disabled=true;
+  pdfButton.textContent='GENERATING PDF… PLEASE WAIT';
+  try{
+    // Yield to the browser so the progress label paints before expensive rendering.
+    await new Promise(resolve=>setTimeout(resolve,60));
+    await ensureAssetsReady();
+    buildPrintPDF();
+    pdfButton.textContent='PDF DOWNLOAD STARTED';
+  }catch(error){
+    console.error('FamLi PDF export failed:',error);
+    alert('PDF export failed: '+(error?.message||String(error))+'\n\nTry again, or check Edge Downloads (Ctrl+J).');
+  }finally{
+    setTimeout(()=>{pdfButton.disabled=false;pdfButton.textContent=original;},2500);
+  }
+};
+
+draw();
+
+</script>
+</body>
+</html>
