@@ -22,45 +22,53 @@
 		align-items:center
 	}
 	header strong{letter-spacing:.08em}
-	header span{font-size:11px;color:#a7a4b5}
-		.app{display:grid;
-			grid-template-columns:300px
-			minmax(0,1fr);
-			min-height:calc(100vh - 62px)
-		}
+	header span{font-size:11px;
+		color:#a7a4b5
+	}.app{display:grid;
+		grid-template-columns:300px
+		minmax(0,1fr);
+		min-height:calc(100vh - 62px)
+	}
 	aside{padding:22px;
 		border-right:1px solid #34333e;
-		overflow:auto}
+		overflow:auto
+	}
 	main{display:flex;
 		flex-direction:column;
 		align-items:center;
 		justify-content:flex-start;
 		padding:24px;gap:14px;
 		background:#191820
-		}
+	}
 	canvas{width:min(100%,790px);
 		height:auto;aspect-ratio:1;
 		box-shadow:0 18px 55px #0008;
 		image-rendering:auto
-		}
+	}
 	.note{font-size:11px;
 		color:#9e9ba9;
 		line-height:1.6;
 		max-width:790px
-		}
+	}
 	h2{font-size:13px;
 		margin:0 0 22px;
 		letter-spacing:.08em
-		}
+	}
 	.field{margin:0 0 19px}
 	.field 
 	label{display:flex;
 		justify-content:space-between;
 		font-size:12px;
-		margin-bottom:8px;color:#d2d0db}
+		margin-bottom:8px;
+		color:#d2d0db
+	}
 	.field 
 	output{color:#a8fff3}
-	input[type=range]{width:100%;accent-color:#c8fff6;touch-action:pan-x}
+	input[type=range]{
+		width:100%;
+		accent-color:#c8fff6;
+		touch-action:none;
+	}
 	select,
 	input[type=text],
 	input[type=number]{background:#22212b;
@@ -70,7 +78,7 @@
 		width:100%;
 		font:inherit;
 		font-size:12px
-		}
+	}
 	button{border:1px solid #777583;
 		background:#252430;
 		color:#e7fdf9;
@@ -78,33 +86,41 @@
 		font-size:12px;
 		padding:12px;
 		cursor:pointer
-		}
+	}
 	button:hover{background:#363542}
-		.primary{background:#d8fff6;
+		.primary{
+			background:#d8fff6;
 			color:#171820;
-			border-color:#d8fff6}
-			.actions{display:grid;
-				grid-template-columns:1fr 1fr;
-				gap:8px;
-				margin:22px 0
+			border-color:#d8fff6
+		}.actions{display:grid;
+			grid-template-columns:1fr 1fr;
+			gap:8px;
+			margin:22px 0
+		}
+		.actions
+		.primary{grid-column:1/-1}
+		.small{font-size:11px;
+			color:#aaa7b8;
+			line-height:1.6
+		}
+		.row{display:grid;
+			grid-template-columns:1fr 1fr;
+			gap:8px
+		}
+		.divider{height:1px;
+			background:#34333e;
+			margin:22px 0
+		}
+		@media(max-width:800px){
+			.app{
+				display:flex;
+				flex-direction:column-reverse
 			}
-			.actions
-			.primary{grid-column:1/-1}
-			.small{font-size:11px;
-				color:#aaa7b8;
-				line-height:1.6
-			}
-			.row{display:grid;
-				grid-template-columns:1fr 1fr;
-				gap:8px
-			}
-			.divider{height:1px;
-				background:#34333e;
-				margin:22px 0
-			}
-			@media(max-width:800px){
-				.app{display:flex; flex-direction:column-reverse}
-	aside{border-right:0;border-top:1px solid #34333e}
+
+	aside{
+		border-right:0;
+		border-top:1px solid #34333e
+		}
 	main{padding:12px}
 	header{padding:14px}
 }
@@ -114,7 +130,7 @@
 <body>
 	<header>
 		<strong>FamLi - practice volume 1</strong>
-		<span>J-CARD GENERATOR v1.0.6</span>
+		<span>J-CARD GENERATOR v1.0.7</span>
 	</header>
 	<div class="app">
 		<aside>
@@ -148,7 +164,8 @@
             		<option value="short">
             			SHORT EDGE
             		</option>
-            	</select></div>
+            	</select>
+            </div>
             
             <div class="field">
             	<label>
@@ -157,13 +174,24 @@
             	</label>
             </div>
             
-            <button id="pdf" class="primary" style="width:100%;margin-bottom:12px">
-            	EXPORT PRINT PDF · 2 PAGES
-        	</button>
+            	<button id="pdf" class="primary" style="width:100%;margin-bottom:12px">
+            		EXPORT PRINT PDF · 2 PAGES
+        		</button>
 
             <div class="actions">
+
 				<button id="random">
-				RANDOMIZE</button><button id="reset">RESET</button><button id="download" class="primary">EXPORT PNG · 3600 PX</button>
+					RANDOMIZE
+				</button>
+
+				<button id="reset">
+					RESET
+				</button>
+
+				<button id="download" class="primary">
+					EXPORT PNG · 3600 PX
+				</button>
+
 			</div>
 			
 			<p class="small">
@@ -180,6 +208,7 @@
 	</div>
 
 <script>
+
 const RELEASE_TITLE='practice vol001';
 const SPINE_TITLE='practice volume 1';
 const defaults={
@@ -197,8 +226,12 @@ const defaults={
 };
 let state={...defaults};
 let assets={};
-const canvas=document.getElementById('art'), 
-	  ctx=canvas.getContext('2d');
+const canvas=document.getElementById('art'),
+      ctx=canvas.getContext('2d');
+// A phone doesn't need a 1200px live preview. Exports retain their original resolution.
+const mobilePreview=window.matchMedia('(max-width: 800px) and (pointer: coarse)').matches;
+const previewSize=mobilePreview?600:1200;
+canvas.width=canvas.height=previewSize;
 const controls=[
 		['seed','ROTATIONS'],
 		['palette','PALETTE'],
@@ -231,7 +264,8 @@ for(const [key,name] of controls){
 		value="${state[key]}">`;
 	holder.append(d);
 	d.querySelector('input').addEventListener('input',e=>{state[key]=+e.target.value;
-	d.querySelector('output').textContent=controlDisplay(key);scheduleDraw()})
+	d.querySelector('output').textContent=controlDisplay(key);scheduleDraw()});
+	d.querySelector('input').addEventListener('change',()=>scheduleDraw(true));
 	}
 // Same-origin image assets for the hosted version.
 // Open over HTTPS (or a local HTTP server), not file://, to allow canvas exports.
@@ -289,7 +323,7 @@ function distribution(x,y){
     // FORM: seed of col_dist. ZOOM: period of col_dist.
     // TD's exact period-to-image coordinate mapping requires calibration.
     const seed=Math.floor(state.form*999);
-    const effectiveZoom=0.10+state.zoom*3.0; // 0..1 UI maps to old 0.10..1.50
+    const effectiveZoom=0.10+state.zoom*3.0; // 0..1 UI maps to 0.10..3.10
     const period=Math.max(.005,.01+effectiveZoom*.42);
     const n=noise(x*period,y*period,seed+1709);
     const signed=(n-.5)*2;
@@ -324,19 +358,32 @@ function rotateLabel(c,text,x,y,angle,size=23){
 
 // Preview-only caches. High-resolution PNG/PDF exports still render afresh.
 const previewPattern=document.createElement('canvas');
-previewPattern.width=previewPattern.height=1200;
+previewPattern.width=previewPattern.height=previewSize;
 const previewTile=document.createElement('canvas');
 previewTile.width=previewTile.height=120;
 const previewOverlay=document.createElement('canvas');
-previewOverlay.width=previewOverlay.height=1200;
+previewOverlay.width=previewOverlay.height=previewSize;
 const previewAlpha=document.createElement('canvas');
-previewAlpha.width=previewAlpha.height=1200;
+previewAlpha.width=previewAlpha.height=previewSize;
 let patternCacheKey=null;
 let drawQueued=false;
-function scheduleDraw(){
+let lastPreviewDraw=0;
+let forcePreviewDraw=false;
+const previewInterval=mobilePreview?110:0;
+function scheduleDraw(force=false){
+    if(force) forcePreviewDraw=true;
     if(drawQueued)return;
     drawQueued=true;
-    requestAnimationFrame(()=>{drawQueued=false;draw();});
+    requestAnimationFrame(function tick(now){
+        if(!forcePreviewDraw && now-lastPreviewDraw<previewInterval){
+            requestAnimationFrame(tick);
+            return;
+        }
+        drawQueued=false;
+        forcePreviewDraw=false;
+        lastPreviewDraw=now;
+        draw();
+    });
 }
 function render(c,size,patternOnly=false){
 	const S=size/1200;
@@ -352,17 +399,18 @@ function render(c,size,patternOnly=false){
 
 	// One continuous field across all three J-card panels.
 
-    const isPreview=(c===ctx && size===1200 && !patternOnly);
+    const isPreview=(c===ctx && size===previewSize && !patternOnly);
     const patternKey=[state.seed,state.palette,state.variety,state.intensity,state.rolloff,state.zoom,state.form,!!shape].join('|');
     if(isPreview){
         if(patternCacheKey!==patternKey){
             const pc=previewPattern.getContext('2d');
             pc.setTransform(1,0,0,1,0,0);
-            pc.clearRect(0,0,1200,1200);
+            pc.clearRect(0,0,previewSize,previewSize);
+            pc.setTransform(previewSize/1200,0,0,previewSize/1200,0,0);
             drawPattern(pc);
             patternCacheKey=patternKey;
         }
-        c.drawImage(previewPattern,0,0);
+        c.drawImage(previewPattern,0,0,1200,1200);
     }else{
         drawPattern(c);
     }
@@ -382,7 +430,7 @@ function render(c,size,patternOnly=false){
 				target.save();
 				target.translate(x*tile+tile/2,y*tile+tile/2);
 				target.rotate(orientation*Math.PI/2);
-				const liScale = 1.05; // 8% larger than the grid cell
+				const liScale = 1.05; // 5% larger than the grid cell
 				const liSize = tile * liScale;
 				target.drawImage(colored,-liSize/2,-liSize/2,liSize,liSize);
 				target.restore()
@@ -439,11 +487,12 @@ c.fill();
     // All typography and wordmarks are first rendered as one transparent
     // greyscale overlay, then multiplied by the sampled/amplified label colour.
     const overlay=isPreview?previewOverlay:document.createElement('canvas');
-    overlay.width=1200; overlay.height=1200;
+    overlay.width=isPreview?previewSize:1200; overlay.height=isPreview?previewSize:1200;
     const oc=overlay.getContext('2d');
     oc.setTransform(1,0,0,1,0,0);
     oc.globalCompositeOperation='source-over';
-    oc.clearRect(0,0,1200,1200);
+    oc.clearRect(0,0,overlay.width,overlay.height);
+    oc.setTransform(overlay.width/1200,0,0,overlay.height/1200,0,0);
     // Local alias: all following branding drawing targets the overlay.
     {
     const originalContext=c;
@@ -495,26 +544,28 @@ if(assets.vertical)drawImageContain(c,assets.vertical,326,775,122,380);
     // Multiply the entire grayscale overlay by the one shared label colour.
     // White type takes the tint; grey logo pixels retain their tonal detail.
     const alphaMask=isPreview?previewAlpha:document.createElement('canvas');
-    alphaMask.width=1200;alphaMask.height=1200;
+    alphaMask.width=overlay.width;alphaMask.height=overlay.height;
     const ac=alphaMask.getContext('2d');
-    ac.clearRect(0,0,1200,1200);
+    ac.setTransform(1,0,0,1,0,0);
+    ac.clearRect(0,0,alphaMask.width,alphaMask.height);
     ac.drawImage(overlay,0,0);
+    oc.setTransform(1,0,0,1,0,0);
     oc.globalCompositeOperation='multiply';
     oc.fillStyle=cssRGB(labelRGB());
-    oc.fillRect(0,0,1200,1200);
+    oc.fillRect(0,0,overlay.width,overlay.height);
     oc.globalCompositeOperation='destination-in';
     // Rebuild original alpha mask to avoid tinting transparent regions.
     // The mask is retained before the multiply pass (see below).
     oc.drawImage(alphaMask,0,0);
     oc.globalCompositeOperation='source-over';
-    originalContext.drawImage(overlay,0,0);
+    originalContext.drawImage(overlay,0,0,1200,1200);
     c=originalContext;
     }
     c.restore();
 }
 
 function draw(){
-    render(ctx,1200);
+    render(ctx,previewSize);
 }
 document.getElementById('random').onclick=()=>{state.seed=Math.random();
 state.palette=Math.random();
@@ -528,7 +579,7 @@ sync()};
 function sync(){for(const [key] of controls){
 	document.getElementById('s-'+key).value=state[key];
 	document.getElementById('v-'+key).textContent=controlDisplay(key)}
-	draw()
+	scheduleDraw(true)
 	}
 
 document.getElementById('download').onclick=()=>{const out=document.createElement('canvas');
@@ -541,6 +592,7 @@ a.click()};
 
 // Standalone two-page PDF writer: JPEG artwork embedded as PDF image XObjects.
 // No network access, external PDF libraries or browser print scaling required.
+
 const PDF_MM=72/25.4;
 function pdfBytesFromCanvas(can,quality=.95){
   const data=can.toDataURL('image/jpeg',quality).split(',')[1];
@@ -619,14 +671,29 @@ function buildPrintPDF(){
   frontCmd+=lineText('ARTWORK: 101.17 x 101.60 mm  /  FOLD AT 25.40 + 12.70 mm',18,143,8,true);
   frontCmd+=artCmd('Im1',x,y)+rules(x,y,true);
   const backCmd=artCmd('Im2',x,yReverse)+rules(x,yReverse,true,duplex==='long');
-  function streamObj(s){const b=ascii(s);return add(concat([ascii(`<< /Length ${b.length} >>\nstream\n`),b,ascii('\nendstream')]));}
-  const content1=streamObj(frontCmd),content2=streamObj(backCmd);
-  const pagesId=objects.length+1;
-  const page1=pagesId+1,page2=pagesId+2,catalogId=pagesId+3;
+  function streamObj(s){
+  	const b=ascii(s);
+  	return add(
+  			concat([
+  				ascii(`<< /Length ${b.length} >>\nstream\n`),
+  		   		b,
+  		   		ascii('\nendstream')
+  		   	])
+  		);
+  	}
+
+  const content1 =streamObj(frontCmd),content2=streamObj(backCmd);
+  const pagesId	 =objects.length+1;
+  const page1 	 =pagesId+1,page2=pagesId+2,catalogId=pagesId+3;
+
   add(`<< /Type /Pages /Kids [${page1} 0 R ${page2} 0 R] /Count 2 >>`);
-  for(const [im,content] of [[image1,content1],[image2,content2]])add(`<< /Type /Page /Parent ${pagesId} 0 R /MediaBox [0 0 ${mm(pageW)} ${mm(pageH)}] /Resources << /XObject << /${im===image1?'Im1':'Im2'} ${im} 0 R >> /Font << /F ${font} 0 R /FB ${bold} 0 R >> >> /Contents ${content} 0 R >>`);
+
+  for(const [im,content] of [[image1,content1],[image2,content2]])
+  	add(`<< /Type /Page /Parent ${pagesId} 0 R /MediaBox [0 0 ${mm(pageW)} ${mm(pageH)}] /Resources << /XObject << /${im===image1?'Im1':'Im2'} ${im} 0 R >> /Font << /F ${font} 0 R /FB ${bold} 0 R >> >> /Contents ${content} 0 R >>`);
   add(`<< /Type /Catalog /Pages ${pagesId} 0 R >>`);
-  const chunks=[ascii('%PDF-1.4\n%FAMLI\n')],offsets=[0];let pos=chunks[0].length;
+  const chunks	=[ascii('%PDF-1.4\n%FAMLI\n')],
+  		offsets =[0];let 
+  		pos 	=chunks[0].length;
   for(let i=0;i<objects.length;i++){
     offsets.push(pos);
     const block=concat([ascii(`${i+1} 0 obj\n`),objects[i],ascii('\nendobj\n')]);
