@@ -111,7 +111,12 @@
 			background:#34333e;
 			margin:22px 0
 		}
-		@media(max-width:800px){
+        .randomize-button{width:100%;margin-bottom:24px;font-weight:bold;letter-spacing:.06em;min-height:48px}
+        #random-mobile{display:none}
+        #manual-controls summary{font-size:13px;font-weight:bold;letter-spacing:.08em;cursor:pointer;list-style:none;margin:0 0 22px}
+        #manual-controls summary::-webkit-details-marker{display:none}
+        #manual-controls summary::after{content:""}
+        @media(max-width:800px){
 			.app{
 				display:flex;
 				flex-direction:column-reverse
@@ -123,6 +128,12 @@
 		}
 	main{padding:12px}
 	header{padding:14px}
+    #random-desktop{display:none}
+    #random-mobile{display:block;width:min(100%,790px);margin:0;min-height:56px;font-size:14px}
+    #manual-controls summary{padding:14px 0;margin:0}
+    #manual-controls summary::after{content:" [+]";color:#a8fff3}
+    #manual-controls[open] summary::after{content:" [−]"}
+    #manual-controls[open] #sliders{padding-top:18px}
 }
 </style>
 </head>
@@ -130,12 +141,15 @@
 <body>
 	<header>
 		<strong>FamLi - practice volume 1</strong>
-		<span>J-CARD GENERATOR v1.0.7</span>
+		<span>J-CARD GENERATOR v1.0.8</span>
 	</header>
 	<div class="app">
 		<aside>
-			<h2>// GENERATIVE CONTROLS</h2>
-			<div id="sliders"></div>
+            <button id="random-desktop" class="primary randomize-button">↻ RANDOMIZE</button>
+            <details id="manual-controls" open>
+                <summary>// GENERATIVE CONTROLS</summary>
+                <div id="sliders"></div>
+            </details>
 			<div class="divider"></div>
 
             <h2>// PRINT EXPORT</h2>
@@ -179,21 +193,9 @@
         		</button>
 
             <div class="actions">
+                <button id="download" class="primary">EXPORT PNG · 3600 PX</button>
+            </div>
 
-				<button id="random">
-					RANDOMIZE
-				</button>
-
-				<button id="reset">
-					RESET
-				</button>
-
-				<button id="download" class="primary">
-					EXPORT PNG · 3600 PX
-				</button>
-
-			</div>
-			
 			<p class="small">
 				Floss Daily Productions 2026
 			</p>
@@ -201,6 +203,7 @@
 		</aside>
 		<main>
 			<canvas id="art" width="1200" height="1200"></canvas>
+            <button id="random-mobile" class="primary randomize-button">↻ RANDOMIZE</button>
 			<div class="note">
 				· FamLi - practice volume 1 · UNFOLDED J-CARD · FLAP / SPINE / FRONT ·
 			</div>
@@ -567,15 +570,29 @@ if(assets.vertical)drawImageContain(c,assets.vertical,326,775,122,380);
 function draw(){
     render(ctx,previewSize);
 }
-document.getElementById('random').onclick=()=>{state.seed=Math.random();
-state.palette=Math.random();
-state.form=Math.random();
-state.backdropHue=Math.floor(Math.random()*361);
-state.backdropSaturation=Math.floor(Math.random()*41);
-state.backdropLightness=12+Math.floor(Math.random()*25);
-sync()};
-document.getElementById('reset').onclick=()=>{state={...defaults};
-sync()};
+function randomize(){
+    // A broader but constrained range of variations for one-tap mobile use.
+    state.seed=Math.random();
+    state.palette=Math.random();
+    state.variety=.2+Math.random()*.8;
+    state.intensity=.35+Math.random()*.65;
+    state.rolloff=.15+Math.random()*.7;
+    state.zoom=Math.random()*.65;
+    state.form=Math.random();
+    state.label=Math.random();
+    state.backdropHue=Math.floor(Math.random()*361);
+    state.backdropSaturation=Math.floor(Math.random()*41);
+    state.backdropLightness=12+Math.floor(Math.random()*25);
+    sync();
+}
+document.getElementById('random-desktop').onclick=randomize;
+document.getElementById('random-mobile').onclick=randomize;
+// Keep desktop controls expanded; collapse them by default on narrow screens.
+const manualControls=document.getElementById('manual-controls');
+const mobileLayout=window.matchMedia('(max-width:800px)');
+function updateControlsLayout(){manualControls.open=!mobileLayout.matches;}
+updateControlsLayout();
+mobileLayout.addEventListener('change',updateControlsLayout);
 function sync(){for(const [key] of controls){
 	document.getElementById('s-'+key).value=state[key];
 	document.getElementById('v-'+key).textContent=controlDisplay(key)}
