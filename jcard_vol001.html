@@ -159,7 +159,7 @@
 <body>
 	<header>
 		<strong>FamLi - practice volume 1</strong>
-		<span>J-CARD GENERATOR v1.0.9</span>
+		<span>J-CARD GENERATOR v1.0.10</span>
 	</header>
 	<div class="app">
 		<aside>
@@ -626,7 +626,7 @@ if(assets.vertical)drawImageContain(c,assets.vertical,326,775,122,380);
 function draw(){
     render(ctx,previewSize);
 }
-function randomize(){
+function randomize(redraw=true){
     // A broader but constrained range of variations for one-tap mobile use.
     state.seed=Math.random();
     state.palette=Math.random();
@@ -639,7 +639,7 @@ function randomize(){
     state.backdropHue=Math.floor(Math.random()*361);
     state.backdropSaturation=Math.floor(Math.random()*41);
     state.backdropLightness=12+Math.floor(Math.random()*25);
-    sync();
+    sync(redraw);
 }
 document.getElementById('random-desktop').onclick=randomize;
 document.getElementById('random-mobile').onclick=randomize;
@@ -649,10 +649,10 @@ const mobileLayout=window.matchMedia('(max-width:800px)');
 function updateControlsLayout(){manualControls.open=!mobileLayout.matches;}
 updateControlsLayout();
 mobileLayout.addEventListener('change',updateControlsLayout);
-function sync(){for(const [key] of controls){
+function sync(redraw=true){for(const [key] of controls){
 	document.getElementById('s-'+key).value=state[key];
 	document.getElementById('v-'+key).textContent=controlDisplay(key)}
-	scheduleDraw(true)
+	if(redraw)scheduleDraw(true)
 	}
 
 document.getElementById('download').onclick=()=>{const out=document.createElement('canvas');
@@ -812,6 +812,8 @@ pdfButton.onclick=async()=>{
   }
 };
 
+// Generate fresh startup values before the first preview render.
+randomize(false);
 draw();
 
 </script>
