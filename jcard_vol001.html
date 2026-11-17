@@ -159,7 +159,7 @@
 <body>
 	<header>
 		<strong>FamLi - practice volume 1</strong>
-		<span>J-CARD GENERATOR v1.0.8</span>
+		<span>J-CARD GENERATOR v1.0.9</span>
 	</header>
 	<div class="app">
 		<aside>
@@ -382,6 +382,34 @@ const previewPattern=document.createElement('canvas');
 previewPattern.width=previewPattern.height=previewSize;
 const previewTile=document.createElement('canvas');
 previewTile.width=previewTile.height=120;
+// Pre-tinted glyph atlas: 128 palette samples, built once per palette change.
+// This avoids ~800 destination-in masks on every preview regeneration.
+const glyphBins=128, glyphCell=120, glyphColumns=16;
+const glyphAtlas=document.createElement('canvas');
+glyphAtlas.width=glyphColumns*glyphCell;
+glyphAtlas.height=Math.ceil(glyphBins/glyphColumns)*glyphCell;
+const glyphAtlasCtx=glyphAtlas.getContext('2d');
+let glyphAtlasKey=null;
+function ensureGlyphAtlas(shape){
+    const key=[state.palette,state.variety,state.intensity,state.rolloff,shape].join('|');
+    if(glyphAtlasKey===key)return;
+    glyphAtlasCtx.setTransform(1,0,0,1,0,0);
+    glyphAtlasCtx.globalCompositeOperation='source-over';
+    glyphAtlasCtx.clearRect(0,0,glyphAtlas.width,glyphAtlas.height);
+    for(let i=0;i<glyphBins;i++){
+        const x=(i%glyphColumns)*glyphCell;
+        const y=Math.floor(i/glyphColumns)*glyphCell;
+        const tileCtx=previewTile.getContext('2d');
+        tileCtx.clearRect(0,0,glyphCell,glyphCell);
+        tileCtx.fillStyle=cssRGB(paletteRGB(i/(glyphBins-1)));
+        tileCtx.fillRect(0,0,glyphCell,glyphCell);
+        tileCtx.globalCompositeOperation='destination-in';
+        tileCtx.drawImage(shape,0,0,glyphCell,glyphCell);
+        tileCtx.globalCompositeOperation='source-over';
+        glyphAtlasCtx.drawImage(previewTile,x,y);
+    }
+    glyphAtlasKey=key;
+}
 const previewOverlay=document.createElement('canvas');
 previewOverlay.width=previewOverlay.height=previewSize;
 const previewAlpha=document.createElement('canvas');
@@ -436,27 +464,37 @@ function render(c,size,patternOnly=false){
         drawPattern(c);
     }
     function drawPattern(target){
-	if(shape){const colored=previewTile;const cc=colored.getContext('2d');
-		for(let y=0;y<rows;y++)
-			for(let x=0;x<cols;x++){
-				let n=noise(x/freq,y/freq,seed);
-				let q=noise(x/.55,y/.55,seed+73);
-				let orientation=Math.floor(clamp(n*.62+q*.38)*4);
-				let color=cssRGB(paletteRGB(distribution(x,y)));
-				cc.clearRect(0,0,120,120);
-				cc.fillStyle=color;
-				cc.fillRect(0,0,120,120);
-				cc.globalCompositeOperation='destination-in';
-				cc.drawImage(shape,0,0,120,120);cc.globalCompositeOperation='source-over';
-				target.save();
-				target.translate(x*tile+tile/2,y*tile+tile/2);
-				target.rotate(orientation*Math.PI/2);
-				const liScale = 1.05; // 5% larger than the grid cell
-				const liSize = tile * liScale;
-				target.drawImage(colored,-liSize/2,-liSize/2,liSize,liSize);
-				target.restore()
-				}
-			}
+    if(shape){
+        const colored=previewTile, cc=colored.getContext('2d');
+        // Preview-only approximation: sample the continuous palette into an atlas.
+        // Full-resolution PNG/PDF exports retain the exact original per-glyph colours.
+        if(isPreview)ensureGlyphAtlas(shape);
+        const liSize=tile*1.05;
+        for(let y=0;y<rows;y++)for(let x=0;x<cols;x++){
+            const n=noise(x/freq,y/freq,seed);
+            const q=noise(x/.55,y/.55,seed+73);
+            const orientation=Math.floor(clamp(n*.62+q*.38)*4);
+            const t=distribution(x,y);
+            target.save();
+            target.translate(x*tile+tile/2,y*tile+tile/2);
+            target.rotate(orientation*Math.PI/2);
+            if(isPreview){
+                const bin=Math.round(t*(glyphBins-1));
+                const sx=(bin%glyphColumns)*glyphCell;
+                const sy=Math.floor(bin/glyphColumns)*glyphCell;
+                target.drawImage(glyphAtlas,sx,sy,glyphCell,glyphCell,-liSize/2,-liSize/2,liSize,liSize);
+            }else{
+                cc.clearRect(0,0,120,120);
+                cc.fillStyle=cssRGB(paletteRGB(t));
+                cc.fillRect(0,0,120,120);
+                cc.globalCompositeOperation='destination-in';
+                cc.drawImage(shape,0,0,120,120);
+                cc.globalCompositeOperation='source-over';
+                target.drawImage(colored,-liSize/2,-liSize/2,liSize,liSize);
+            }
+            target.restore();
+        }
+    }
 
     }
 
