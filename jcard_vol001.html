@@ -159,7 +159,7 @@
 <body>
 	<header>
 		<strong>FamLi - practice volume 1</strong>
-		<span>J-CARD GENERATOR v1.0.10</span>
+		<span>J-CARD GENERATOR v1.0.12</span>
 	</header>
 	<div class="app">
 		<aside>
@@ -213,6 +213,8 @@
             <div class="actions">
                 <button id="download" class="primary">EXPORT PNG · 3600 PX</button>
             </div>
+            <button id="download-label" class="primary" style="width:100%;margin-bottom:12px">DOWNLOAD LABEL · PNG</button>
+            <p class="small">Cassette label artwork · 96 × 46 mm with bleed · position/crop to your sticker template.</p>
 
 			<p class="small">
 				Floss Daily Productions 2026
@@ -498,7 +500,41 @@ function render(c,size,patternOnly=false){
 
     }
 
-    if(patternOnly){c.restore();return;}
+    if(patternOnly){
+        // Inside of the J-card: an explanatory panel on the wide front section.
+        // The underlying generative artwork remains visible elsewhere.
+        const bx=535, by=225, bw=585, bh=510;
+        c.fillStyle=backdropColor();
+        c.beginPath();
+        c.roundRect(bx,by,bw,bh,24);
+        c.fill();
+
+        const ink=cssRGB(labelRGB());
+        c.fillStyle=ink;
+        c.textAlign='left';
+        c.textBaseline='alphabetic';
+        c.font="bold 32px 'Lucida Console',Monaco,monospace";
+        c.fillText('ABOUT THESE RECORDINGS',bx+30,by+65,bw-60);
+
+        const lines=[
+            'Every track on this cassette is',
+            'taken from a live, improvised',
+            'performance.',
+            '',
+            'The six-digit code at the start',
+            'of each track title is the date',
+            'of its original session.',
+            '',
+            'Find the video of that session',
+            'using its date code in the',
+            'practice archive:',
+            'famli.dev > YouTube > practice'
+        ];
+        c.font="24px 'Lucida Console',Monaco,monospace";
+        lines.forEach((line,i)=>c.fillText(line,bx+30,by+112+i*30,bw-60));
+        c.restore();
+        return;
+    }
 
 	// Layout pass: measured against the supplied 1240px reference image.
 	// All coordinates are normalized to the 1200 x 1200 design surface.
@@ -662,6 +698,99 @@ const a=document.createElement('a');
 a.download='famli-jcard-'+Math.round(state.seed*9999)+'.png';
 a.href=out.toDataURL('image/png');
 a.click()};
+
+// Cassette label: 96 × 46 mm canvas, rasterized at approximately 600 dpi.
+// Drawn only on demand; no extra preview or continuous background rendering.
+// Text is concentrated in a central strip for compatibility with narrow labels.
+const labelButton=document.getElementById('download-label');
+labelButton.onclick=async()=>{
+  const original=labelButton.textContent;
+  labelButton.disabled=true;
+  labelButton.textContent='GENERATING LABEL…';
+  try{
+    await new Promise(resolve=>setTimeout(resolve,60));
+    await ensureAssetsReady();
+    const W=2268,H=1087;
+    const out=document.createElement('canvas');
+    out.width=W;out.height=H;
+    const c=out.getContext('2d');
+    const unit=W/960; // 10 virtual units per mm
+    c.setTransform(unit,0,0,unit,0,0);
+    c.fillStyle=backdropColor();
+    c.fillRect(0,0,960,460);
+
+    // Render the existing exact per-glyph generative pattern, in label proportions.
+    // Preserve the J-card's original 43-unit tile scale relative to 1200 design units.
+    const tile=43,seed=Math.floor(state.seed*9999),freq=1.4;
+    const shape=assets.li;
+    if(shape){
+      const tinted=document.createElement('canvas');
+      tinted.width=tinted.height=120;
+      const tc=tinted.getContext('2d');
+      for(let y=0;y<Math.ceil(460/tile);y++)for(let x=0;x<Math.ceil(960/tile);x++){
+        const n=noise(x/freq,y/freq,seed);
+        const q=noise(x/.55,y/.55,seed+73);
+        const orientation=Math.floor(clamp(n*.62+q*.38)*4);
+        const t=distribution(x,y);
+        tc.clearRect(0,0,120,120);
+        tc.fillStyle=cssRGB(paletteRGB(t));
+        tc.fillRect(0,0,120,120);
+        tc.globalCompositeOperation='destination-in';
+        tc.drawImage(shape,0,0,120,120);
+        tc.globalCompositeOperation='source-over';
+        c.save();
+        c.translate(x*tile+tile/2,y*tile+tile/2);
+        c.rotate(orientation*Math.PI/2);
+        c.drawImage(tinted,-tile*1.05/2,-tile*1.05/2,tile*1.05,tile*1.05);
+        c.restore();
+      }
+    }
+
+    // A 12 mm-high centered band remains useful even on strip-style labels.
+    const stripY=170,stripH=120;
+    c.fillStyle=backdropColor();
+    c.fillRect(0,stripY,960,stripH);
+    const ink=cssRGB(labelRGB());
+    c.fillStyle=ink;
+    c.textBaseline='middle';
+    if(assets.famli){
+      // Preserve wordmark aspect ratio and original transparency.
+      const im=assets.famli;
+      const maxW=310,maxH=83;
+      const scale=Math.min(maxW/im.width,maxH/im.height);
+      const w=im.width*scale,h=im.height*scale;
+      const mask=document.createElement('canvas');
+      mask.width=Math.ceil(w*unit);mask.height=Math.ceil(h*unit);
+      const mc=mask.getContext('2d');
+      mc.drawImage(im,0,0,mask.width,mask.height);
+      mc.globalCompositeOperation='source-in';
+      mc.fillStyle=ink;
+      mc.fillRect(0,0,mask.width,mask.height);
+      c.drawImage(mask,55,230-h/2,w,h);
+    }else{
+      c.font='bold 52px monospace';
+      c.textAlign='left';
+      c.fillText('FamLi',55,230);
+    }
+    c.font="37px 'Lucida Console',Monaco,monospace";
+    c.textAlign='right';
+    c.fillText(RELEASE_TITLE,905,230,490);
+
+    const blob=await new Promise((resolve,reject)=>out.toBlob(b=>b?resolve(b):reject(new Error('PNG encoding failed')),'image/png'));
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;
+    a.download='famli-cassette-label-'+Math.round(state.seed*9999)+'.png';
+    document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),30000);
+    labelButton.textContent='LABEL DOWNLOAD STARTED';
+  }catch(error){
+    console.error('FamLi label export failed:',error);
+    alert('Label export failed: '+(error?.message||String(error)));
+  }finally{
+    setTimeout(()=>{labelButton.disabled=false;labelButton.textContent=original;},1800);
+  }
+};
 
 // Standalone two-page PDF writer: JPEG artwork embedded as PDF image XObjects.
 // No network access, external PDF libraries or browser print scaling required.
