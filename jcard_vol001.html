@@ -171,6 +171,9 @@
 			<div class="divider"></div>
 
             <h2>// PRINT EXPORT</h2>
+                <p class="small">
+            		Keep your set - Download all three files before refreshing or randomizing to keep your J-card, digital cover, and cassette label designs matching.
+            	</p>
             <div class="field">
             	<label for="paper">
             		PAPER SIZE
@@ -203,18 +206,22 @@
             	<label>
             		<span>TRIM + FOLD GUIDES</span>
             		<input type="checkbox" id="guides" checked>
-            	</label>
+            	</label> 
             </div>
-            
-            	<button id="pdf" class="primary" style="width:100%;margin-bottom:12px">
+
+            <div class="actions">
+            	<button id="pdf" class="primary">
             		EXPORT PRINT PDF · 2 PAGES
         		</button>
 
-            <div class="actions">
-                <button id="download" class="primary">EXPORT PNG · 3600 PX</button>
+                <button id="download" class="primary">
+                	EXPORT PNG · 3600 PX
+                </button>
+
+            	<button id="download-label" class="primary">
+            		DOWNLOAD LABEL · PNG
+            	</button>
             </div>
-            <button id="download-label" class="primary" style="width:100%;margin-bottom:12px">DOWNLOAD LABEL · PNG</button>
-            <p class="small">Cassette label artwork · 96 × 46 mm with bleed · position/crop to your sticker template.</p>
 
 			<p class="small">
 				Floss Daily Productions 2026
@@ -225,7 +232,7 @@
 			<canvas id="art" width="1200" height="1200"></canvas>
             <button id="random-mobile" class="primary randomize-button">↻ RANDOMIZE</button>
 			<div class="note">
-				· FamLi - practice volume 1 · UNFOLDED J-CARD · FLAP / SPINE / FRONT ·
+				· FLAP / SPINE / FRONT ·
 			</div>
 		</main>
 	</div>
@@ -517,8 +524,8 @@ function render(c,size,patternOnly=false){
         c.fillText('ABOUT THESE RECORDINGS',bx+30,by+65,bw-60);
 
         const lines=[
-            'Every track on this cassette is',
-            'taken from a live, improvised',
+            'The recordings on  this cassette',
+            'are taken from a live improvised',
             'performance.',
             '',
             'The six-digit code at the start',
@@ -526,8 +533,8 @@ function render(c,size,patternOnly=false){
             'of its original session.',
             '',
             'Find the video of that session',
-            'using its date code in the',
-            'practice archive:',
+            'using  its  date code  in  the',
+            'practice  archive:',
             'famli.dev > YouTube > practice'
         ];
         c.font="24px 'Lucida Console',Monaco,monospace";
