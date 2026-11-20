@@ -524,18 +524,19 @@ function render(c,size,patternOnly=false){
         c.fillText('ABOUT THESE RECORDINGS',bx+30,by+65,bw-60);
 
         const lines=[
-            'The recordings on  this cassette',
-            'are taken from a live improvised',
+            'Every  piece  on  this cassette',
+            'is taken from a live improvised',
             'performance.',
             '',
             'The six-digit code at the start',
             'of each track title is the date',
             'of its original session.',
             '',
-            'Find the video of that session',
-            'using  its  date code  in  the',
+            'Find  the video of that session',
+            'using  its  date  code  in  the',
             'practice  archive:',
-            'famli.dev > YouTube > practice'
+            '',
+            'famli.dev >> YouTube >> practice'
         ];
         c.font="24px 'Lucida Console',Monaco,monospace";
         lines.forEach((line,i)=>c.fillText(line,bx+30,by+112+i*30,bw-60));
