@@ -168,7 +168,7 @@
 <body>
 	<header>
 		<strong>FamLi - practice volume 1</strong>
-		<span>J-CARD GENERATOR v1.0.15</span>
+		<span>J-CARD GENERATOR v1.0.16</span>
 	</header>
 	<div class="app">
 		<aside>
@@ -961,6 +961,11 @@ function buildPrintPDF(){
       const charWidth=7*0.6/PDF_MM;
       out+=text(value,right-value.length*charWidth,top,7);
     });
+    // Project URL below the parameter list, within the right-hand column.
+    out+='0.35 w 0.65 0.65 0.65 RG\n';
+    out+=`${mm(164)} ${mm(pageH-145)} m ${mm(pageW-14)} ${mm(pageH-145)} l S\n`;
+    out+='0.22 0.22 0.22 rg\n';
+    out+=text('famli.dev/jcard_vol001',164,152,6,'FM');
     return out;
   }
   function rules(cx,cy,includeFold,mirrorFold=false){
