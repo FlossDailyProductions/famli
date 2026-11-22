@@ -168,7 +168,7 @@
 <body>
 	<header>
 		<strong>FamLi - practice volume 1</strong>
-		<span>J-CARD GENERATOR v1.0.13</span>
+		<span>J-CARD GENERATOR v1.0.14</span>
 	</header>
 	<div class="app">
 		<aside>
@@ -319,7 +319,9 @@ const files={
 			li:'images/li-primitive.png',
 			famli:'images/famli-wordmark.png',
 			vertical:'images/famli-vertical-wordmark.png',
-			floss:'images/floss-daily-logo.png'
+			floss:'images/floss-daily-logo.png',
+            labelStrip:'images/cassette_label_STRIP.png',
+            labelBig:'images/cassette_label_BIG.png'
 			};
 for(const [key,url] of Object.entries(files)){
 	const im=new Image();
@@ -727,14 +729,8 @@ a.click()};
 // Cassette label: 96 × 46 mm canvas, rasterized at approximately 600 dpi.
 // Drawn only on demand; no extra preview or continuous background rendering.
 // Text is concentrated in a central strip for compatibility with narrow labels.
-const labelButton=document.getElementById('download-label');
-labelButton.onclick=async()=>{
-  const original=labelButton.textContent;
-  labelButton.disabled=true;
-  labelButton.textContent='GENERATING LABEL…';
-  try{
-    await new Promise(resolve=>setTimeout(resolve,60));
-    await ensureAssetsReady();
+// Shared label renderer: PNG export and the PDF cropping examples use identical artwork.
+function renderCassetteLabel(){
     const W=2268,H=1087;
     const out=document.createElement('canvas');
     out.width=W;out.height=H;
@@ -814,6 +810,36 @@ labelButton.onclick=async()=>{
     c.textAlign='right';
     c.fillText(RELEASE_TITLE,905,230+labelYOffset,490);
 
+    return out;
+}
+
+// Apply the supplied transparent label template as an alpha mask.
+// A white backing makes the holes and cut edges obvious on the PDF page.
+function renderLabelExample(labelCanvas,mask){
+  const W=960,H=460;
+  const masked=document.createElement('canvas');masked.width=W;masked.height=H;
+  const m=masked.getContext('2d');
+  m.drawImage(labelCanvas,0,0,W,H);
+  m.globalCompositeOperation='destination-in';
+  m.drawImage(mask,0,0,W,H);
+  m.globalCompositeOperation='source-over';
+  const out=document.createElement('canvas');out.width=W;out.height=H;
+  const c=out.getContext('2d');
+  c.fillStyle='#ffffff';c.fillRect(0,0,W,H);
+  c.drawImage(masked,0,0);
+  return out;
+}
+
+const labelButton=document.getElementById('download-label');
+labelButton.onclick=async()=>{
+  const original=labelButton.textContent;
+  labelButton.disabled=true;
+  labelButton.textContent='GENERATING LABEL…';
+  try{
+    await new Promise(resolve=>setTimeout(resolve,60));
+    await ensureAssetsReady();
+    const out=renderCassetteLabel();
+
     // Display the generated cassette label on the webpage
     const preview = document.getElementById('label-preview');
     const pc = preview.getContext('2d');
@@ -873,6 +899,12 @@ function buildPrintPDF(){
   const back=document.createElement('canvas');back.width=1200*scale;back.height=1200*scale;
   render(back.getContext('2d'),back.width,true,duplex);
   const frontJpg=pdfBytesFromCanvas(front),backJpg=pdfBytesFromCanvas(back);
+  // Both examples are derived from the same generative state as the J-card.
+  const labelArt=renderCassetteLabel();
+  const bigExample=renderLabelExample(labelArt,assets.labelBig);
+  const stripExample=renderLabelExample(labelArt,assets.labelStrip);
+  const bigJpg=pdfBytesFromCanvas(bigExample,.92);
+  const stripJpg=pdfBytesFromCanvas(stripExample,.92);
   const objects=[];
   const enc=new TextEncoder();
   const ascii=s=>enc.encode(s);
@@ -880,6 +912,8 @@ function buildPrintPDF(){
   function add(content){objects.push(typeof content==='string'?ascii(content):content);return objects.length;}
   function imageObj(bytes,w,h){return add(concat([ascii(`<< /Type /XObject /Subtype /Image /Width ${w} /Height ${h} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${bytes.length} >>\nstream\n`),bytes,ascii('\nendstream')]));}
   const image1=imageObj(frontJpg,front.width,front.height),image2=imageObj(backJpg,back.width,back.height);
+  const imageBig=imageObj(bigJpg,bigExample.width,bigExample.height);
+  const imageStrip=imageObj(stripJpg,stripExample.width,stripExample.height);
   const font=add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>');
   const bold=add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>');
   const mono=add('<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>');
@@ -952,7 +986,23 @@ function buildPrintPDF(){
   frontCmd+=lineText('ARTWORK: 101.17 x 101.60 mm  /  FOLD AT 25.40 + 12.70 mm',18,143,8,true);
   frontCmd+=parameterLegend();
   frontCmd+=artCmd('Im1',x,y)+rules(x,y,true);
-  const backCmd=artCmd('Im2',x,yReverse)+rules(x,yReverse,true,duplex==='long');
+  // Page 2's open half changes with the chosen duplex flip orientation.
+  // Keep the guide clear of the actual-size J-card and all trim/fold ticks.
+  const guideTop=duplex==='long'?18:125;
+  const exampleW=79,exampleH=exampleW*460/960;
+  const exampleLeft=18,exampleRight=pageW-18-exampleW;
+  let backCmd=artCmd('Im2',x,yReverse)+rules(x,yReverse,true,duplex==='long');
+  backCmd+='0 0 0 rg\n';
+  backCmd+=lineText('CASSETTE LABEL / CROPPING GUIDE',18,guideTop,13,true);
+  backCmd+=lineText('One generated label, two common sticker formats.',18,guideTop+8,9);
+  backCmd+=lineText('FULL-FACE LABEL',exampleLeft,guideTop+18,8,true);
+  backCmd+=lineText('NARROW STRIP',exampleRight,guideTop+18,8,true);
+  backCmd+=artCmdExample('ImBig',exampleLeft,guideTop+22,exampleW,exampleH);
+  backCmd+=artCmdExample('ImStrip',exampleRight,guideTop+22,exampleW,exampleH);
+  backCmd+=lineText('Your label stock determines the final crop and alignment.',18,guideTop+70,9);
+  backCmd+=lineText('Use the downloaded label PNG with your sticker template.',18,guideTop+77,9);
+  backCmd+=lineText('Position and scale as needed; keep the title and logo visible.',18,guideTop+84,9);
+  function artCmdExample(img,x0,y0,w,h){return `q ${mm(w)} 0 0 ${mm(h)} ${mm(x0)} ${mm(pageH-y0-h)} cm /${img} Do Q\n`; }
   function streamObj(s){
   	const b=ascii(s);
   	return add(
@@ -971,7 +1021,7 @@ function buildPrintPDF(){
   add(`<< /Type /Pages /Kids [${page1} 0 R ${page2} 0 R] /Count 2 >>`);
 
   for(const [im,content] of [[image1,content1],[image2,content2]])
-  	add(`<< /Type /Page /Parent ${pagesId} 0 R /MediaBox [0 0 ${mm(pageW)} ${mm(pageH)}] /Resources << /XObject << /${im===image1?'Im1':'Im2'} ${im} 0 R >> /Font << /F ${font} 0 R /FB ${bold} 0 R /FM ${mono} 0 R >> >> /Contents ${content} 0 R >>`);
+    add(`<< /Type /Page /Parent ${pagesId} 0 R /MediaBox [0 0 ${mm(pageW)} ${mm(pageH)}] /Resources << /XObject << /${im===image1?'Im1':'Im2'} ${im} 0 R /ImBig ${imageBig} 0 R /ImStrip ${imageStrip} 0 R >> /Font << /F ${font} 0 R /FB ${bold} 0 R /FM ${mono} 0 R >> >> /Contents ${content} 0 R >>`);
   add(`<< /Type /Catalog /Pages ${pagesId} 0 R >>`);
   const chunks	=[ascii('%PDF-1.4\n%FAMLI\n')],
   		offsets =[0];let 
