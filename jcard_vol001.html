@@ -772,17 +772,19 @@ labelButton.onclick=async()=>{
     }
 
     // Label strip for practice vol001
+	const labelYOffset = -100;
+
     const t_stripX=563, t_stripY=207, t_stripW=450, t_stripH=46;
     c.fillStyle=backdropColor();
     c.beginPath();
-    c.roundRect(t_stripX, t_stripY, t_stripW, t_stripH, 12);
+    c.roundRect(t_stripX, t_stripY+labelYOffset, t_stripW, t_stripH, 12);
     c.fill();
 
     // Label strip for FamLi wordmark
     const f_stripX=39, f_stripY=179, f_stripW=340, f_stripH=100;
     c.fillStyle=backdropColor();
     c.beginPath();
-    c.roundRect(f_stripX, f_stripY, f_stripW, f_stripH, 12);
+    c.roundRect(f_stripX, f_stripY+labelYOffset, f_stripW, f_stripH, 12);
     c.fill();
 
     const ink=cssRGB(labelRGB());
@@ -801,7 +803,7 @@ labelButton.onclick=async()=>{
       mc.globalCompositeOperation='source-in';
       mc.fillStyle=ink;
       mc.fillRect(0,0,mask.width,mask.height);
-      c.drawImage(mask,55,230-h/2,w,h);
+      c.drawImage(mask,55,230-h/2+labelYOffset,w,h);
     }else{
       c.font='bold 52px monospace';
       c.textAlign='left';
@@ -809,7 +811,7 @@ labelButton.onclick=async()=>{
     }
     c.font="37px 'Lucida Console',Monaco,monospace";
     c.textAlign='right';
-    c.fillText(RELEASE_TITLE,905,230,490);
+    c.fillText(RELEASE_TITLE,905,230+labelYOffset,490);
 
     // Display the generated cassette label on the webpage
     const preview = document.getElementById('label-preview');
