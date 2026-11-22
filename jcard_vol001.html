@@ -58,11 +58,20 @@
 		padding:24px;gap:14px;
 		background:#191820
 	}
-	canvas{width:min(100%,790px);
-		height:auto;aspect-ratio:1;
-		box-shadow:0 18px 55px #0008;
-		image-rendering:auto
+	#art {
+    	width: min(100%, 790px);
+    	height: auto;
+    	aspect-ratio: 1;
+    	box-shadow: 0 18px 55px #0008;
+    	image-rendering: auto;
 	}
+
+	#label-preview {
+    	aspect-ratio: 960 / 460;
+    	width: 100%;
+    	height: auto;
+	}
+
 	.note{font-size:11px;
 		color:#9e9ba9;
 		line-height:1.6;
@@ -221,7 +230,14 @@
             	<button id="download-label" class="primary">
             		DOWNLOAD LABEL · PNG
             	</button>
+
             </div>
+
+            <canvas id="label-preview"
+        		width="960"
+        		height="460"
+        		style="width:100%;height:auto;display:none;margin-top:12px;">
+			</canvas>
 
 			<p class="small">
 				Floss Daily Productions 2026
@@ -230,10 +246,10 @@
 		</aside>
 		<main>
 			<canvas id="art" width="1200" height="1200"></canvas>
-            <button id="random-mobile" class="primary randomize-button">↻ RANDOMIZE</button>
 			<div class="note">
 				· FLAP / SPINE / FRONT ·
 			</div>
+            <button id="random-mobile" class="primary randomize-button">↻ RANDOMIZE</button>
 		</main>
 	</div>
 
@@ -443,7 +459,7 @@ function scheduleDraw(force=false){
         draw();
     });
 }
-function render(c,size,patternOnly=false){
+function render(c,size,patternOnly=false,duplex='long'){
 	const S=size/1200;
 	c.save();
 	c.setTransform(S,0,0,S,0,0);
@@ -510,7 +526,8 @@ function render(c,size,patternOnly=false){
     if(patternOnly){
         // Inside of the J-card: an explanatory panel on the wide front section.
         // The underlying generative artwork remains visible elsewhere.
-        const bx=535, by=225, bw=585, bh=510;
+		const bx = duplex === 'long' ? 80 : 535;
+		const by = 225, bw = 585, bh = 510;
         c.fillStyle=backdropColor();
         c.beginPath();
         c.roundRect(bx,by,bw,bh,24);
@@ -754,10 +771,20 @@ labelButton.onclick=async()=>{
       }
     }
 
-    // A 12 mm-high centered band remains useful even on strip-style labels.
-    const stripY=170,stripH=120;
+    // Label strip for practice vol001
+    const t_stripX=560, t_stripY=206, t_stripW=400, t_stripH=45;
     c.fillStyle=backdropColor();
-    c.fillRect(0,stripY,960,stripH);
+    c.beginPath();
+    c.roundRect(t_stripX, t_stripY, t_stripW, t_stripH, 12);
+    c.fill();
+
+    // Label strip for FamLi wordmark
+    const f_stripX=39, f_stripY=179, f_stripW=340, f_stripH=100;
+    c.fillStyle=backdropColor();
+    c.beginPath();
+    c.roundRect(f_stripX, f_stripY, f_stripW, f_stripH, 12);
+    c.fill();
+
     const ink=cssRGB(labelRGB());
     c.fillStyle=ink;
     c.textBaseline='middle';
@@ -784,7 +811,23 @@ labelButton.onclick=async()=>{
     c.textAlign='right';
     c.fillText(RELEASE_TITLE,905,230,490);
 
-    const blob=await new Promise((resolve,reject)=>out.toBlob(b=>b?resolve(b):reject(new Error('PNG encoding failed')),'image/png'));
+    // Display the generated cassette label on the webpage
+    const preview = document.getElementById('label-preview');
+    const pc = preview.getContext('2d');
+
+    pc.clearRect(0, 0, preview.width, preview.height);
+    pc.drawImage(out, 0, 0, preview.width, preview.height);
+    preview.style.display = 'block';
+
+    // Export PNG
+    const blob = await new Promise((resolve, reject) =>
+        out.toBlob(
+            b => b ? resolve(b) : reject(new Error('PNG encoding failed')),
+            'image/png'
+        )
+    );
+
+
     const url=URL.createObjectURL(blob);
     const a=document.createElement('a');
     a.href=url;
@@ -825,7 +868,7 @@ function buildPrintPDF(){
   const front=document.createElement('canvas');front.width=1200*scale;front.height=1200*scale;
   render(front.getContext('2d'),front.width,false);
   const back=document.createElement('canvas');back.width=1200*scale;back.height=1200*scale;
-  render(back.getContext('2d'),back.width,true);
+  render(back.getContext('2d'),back.width,true,duplex);
   const frontJpg=pdfBytesFromCanvas(front),backJpg=pdfBytesFromCanvas(back);
   const objects=[];
   const enc=new TextEncoder();
