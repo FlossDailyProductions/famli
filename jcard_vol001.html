@@ -773,6 +773,7 @@ labelButton.onclick=async()=>{
 
     // Label strip for practice vol001
 	const labelYOffset = -125;
+	const logoXOffset = 12;
 
     const t_stripX=563, t_stripY=207, t_stripW=450, t_stripH=46;
     c.fillStyle=backdropColor();
@@ -781,10 +782,10 @@ labelButton.onclick=async()=>{
     c.fill();
 
     // Label strip for FamLi wordmark
-    const f_stripX=47, f_stripY=191, f_stripW=269, f_stripH=78;
+    const f_stripX=47, f_stripY=191, f_stripW=268, f_stripH=78;
     c.fillStyle=backdropColor();
     c.beginPath();
-    c.roundRect(f_stripX, f_stripY+labelYOffset, f_stripW, f_stripH, 12);
+    c.roundRect(f_stripX+logoXOffset, f_stripY+labelYOffset, f_stripW, f_stripH, 12);
     c.fill();
 
     const ink=cssRGB(labelRGB());
@@ -803,7 +804,7 @@ labelButton.onclick=async()=>{
       mc.globalCompositeOperation='source-in';
       mc.fillStyle=ink;
       mc.fillRect(0,0,mask.width,mask.height);
-      c.drawImage(mask,55,230-h/2+labelYOffset,w,h);
+      c.drawImage(mask,55+logoXOffset,230-h/2+labelYOffset,w,h);
     }else{
       c.font='bold 52px monospace';
       c.textAlign='left';
