@@ -168,7 +168,7 @@
 <body>
 	<header>
 		<strong>FamLi - practice volume 1</strong>
-		<span>J-CARD GENERATOR v1.0.12</span>
+		<span>J-CARD GENERATOR v1.0.13</span>
 	</header>
 	<div class="app">
 		<aside>
@@ -879,9 +879,34 @@ function buildPrintPDF(){
   const image1=imageObj(frontJpg,front.width,front.height),image2=imageObj(backJpg,back.width,back.height);
   const font=add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>');
   const bold=add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>');
+  const mono=add('<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>');
   const esc=s=>s.replace(/\\/g,'\\\\').replace(/\(/g,'\\(').replace(/\)/g,'\\)');
   const mm=v=>(v*PDF_MM).toFixed(3);
   function lineText(text,x,top,pt=9,isBold=false){return `BT /${isBold?'FB':'F'} ${pt} Tf 1 0 0 1 ${mm(x)} ${mm(pageH-top)} Tm (${esc(text)}) Tj ET\n`;}
+  // Record the exact slider state used for this exported edition.
+  // Values are captured when the PDF is generated, including manual adjustments.
+  function parameterLegend(){
+    const values=controls.map(([key,name])=>[
+      name,
+      backdropControls.has(key) ? String(Math.round(state[key])) : state[key].toFixed(3)
+    ]);
+    const text=(str,x,top,pt=7,font='FM')=>
+      `BT /${font} ${pt} Tf 1 0 0 1 ${mm(x)} ${mm(pageH-top)} Tm (${esc(str)}) Tj ET\n`;
+    let out='0 0 0 rg\n';
+    out+=text('GENERATIVE PARAMETERS',164,35,8,'FB');
+    out+='0.35 w 0.65 0.65 0.65 RG\n';
+    out+=`${mm(164)} ${mm(pageH-38)} m ${mm(pageW-14)} ${mm(pageH-38)} l S\n`;
+    out+='0 0 0 rg\n';
+    values.forEach(([name,value],i)=>{
+      const top=45+i*7;
+      out+=text(name,164,top,7);
+      // Courier is monospaced: right-align against a fixed column.
+      const right=pageW-15;
+      const charWidth=7*0.6/PDF_MM;
+      out+=text(value,right-value.length*charWidth,top,7);
+    });
+    return out;
+  }
   function rules(cx,cy,includeFold,mirrorFold=false){
     if(!guides)return '';
     const L=cx,R=cx+artW,T=cy,B=cy+artH,g=3.5,l=3;
@@ -922,6 +947,7 @@ function buildPrintPDF(){
   frontCmd+=lineText('First test on ordinary paper. Hold to light to inspect registration.',18,125,9);
   frontCmd+=lineText('Home duplex printers can shift the reverse by a few millimetres.',18,131,9);
   frontCmd+=lineText('ARTWORK: 101.17 x 101.60 mm  /  FOLD AT 25.40 + 12.70 mm',18,143,8,true);
+  frontCmd+=parameterLegend();
   frontCmd+=artCmd('Im1',x,y)+rules(x,y,true);
   const backCmd=artCmd('Im2',x,yReverse)+rules(x,yReverse,true,duplex==='long');
   function streamObj(s){
@@ -942,7 +968,7 @@ function buildPrintPDF(){
   add(`<< /Type /Pages /Kids [${page1} 0 R ${page2} 0 R] /Count 2 >>`);
 
   for(const [im,content] of [[image1,content1],[image2,content2]])
-  	add(`<< /Type /Page /Parent ${pagesId} 0 R /MediaBox [0 0 ${mm(pageW)} ${mm(pageH)}] /Resources << /XObject << /${im===image1?'Im1':'Im2'} ${im} 0 R >> /Font << /F ${font} 0 R /FB ${bold} 0 R >> >> /Contents ${content} 0 R >>`);
+  	add(`<< /Type /Page /Parent ${pagesId} 0 R /MediaBox [0 0 ${mm(pageW)} ${mm(pageH)}] /Resources << /XObject << /${im===image1?'Im1':'Im2'} ${im} 0 R >> /Font << /F ${font} 0 R /FB ${bold} 0 R /FM ${mono} 0 R >> >> /Contents ${content} 0 R >>`);
   add(`<< /Type /Catalog /Pages ${pagesId} 0 R >>`);
   const chunks	=[ascii('%PDF-1.4\n%FAMLI\n')],
   		offsets =[0];let 
