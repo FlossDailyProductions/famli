@@ -168,7 +168,7 @@
 <body>
 	<header>
 		<strong>FamLi - practice volume 1</strong>
-		<span>J-CARD GENERATOR v1.0.14</span>
+		<span>J-CARD GENERATOR v1.0.15</span>
 	</header>
 	<div class="app">
 		<aside>
@@ -905,6 +905,24 @@ function buildPrintPDF(){
   const stripExample=renderLabelExample(labelArt,assets.labelStrip);
   const bigJpg=pdfBytesFromCanvas(bigExample,.92);
   const stripJpg=pdfBytesFromCanvas(stripExample,.92);
+   // Print-only charcoal wordmark, sourced from the same brand asset as the artwork.
+   // An opaque white background avoids transparency/soft-mask requirements in PDF 1.4.
+   const logoCanvas=document.createElement('canvas');
+   logoCanvas.width=1100;logoCanvas.height=300;
+   const lc=logoCanvas.getContext('2d');
+   lc.fillStyle='#ffffff';lc.fillRect(0,0,1100,300);
+   const wordmark=assets.famli;
+   if(wordmark){
+     const scale=Math.min(1040/wordmark.width,250/wordmark.height);
+     const w=wordmark.width*scale,h=wordmark.height*scale;
+     const mask=document.createElement('canvas');mask.width=1100;mask.height=300;
+     const mc=mask.getContext('2d');
+     mc.drawImage(wordmark,30,25,w,h);
+     mc.globalCompositeOperation='source-in';
+     mc.fillStyle='#222222';mc.fillRect(0,0,1100,300);
+     lc.drawImage(mask,0,0);
+   }
+   const logoJpg=pdfBytesFromCanvas(logoCanvas,.98);
   const objects=[];
   const enc=new TextEncoder();
   const ascii=s=>enc.encode(s);
@@ -914,6 +932,7 @@ function buildPrintPDF(){
   const image1=imageObj(frontJpg,front.width,front.height),image2=imageObj(backJpg,back.width,back.height);
   const imageBig=imageObj(bigJpg,bigExample.width,bigExample.height);
   const imageStrip=imageObj(stripJpg,stripExample.width,stripExample.height);
+   const imageLogo=imageObj(logoJpg,logoCanvas.width,logoCanvas.height);
   const font=add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>');
   const bold=add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>');
   const mono=add('<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>');
@@ -930,12 +949,12 @@ function buildPrintPDF(){
     const text=(str,x,top,pt=7,font='FM')=>
       `BT /${font} ${pt} Tf 1 0 0 1 ${mm(x)} ${mm(pageH-top)} Tm (${esc(str)}) Tj ET\n`;
     let out='0 0 0 rg\n';
-    out+=text('GENERATIVE PARAMETERS',164,35,8,'FB');
+    out+=text('GENERATIVE PARAMETERS',164,55,8,'FB');
     out+='0.35 w 0.65 0.65 0.65 RG\n';
-    out+=`${mm(164)} ${mm(pageH-38)} m ${mm(pageW-14)} ${mm(pageH-38)} l S\n`;
+    out+=`${mm(164)} ${mm(pageH-58)} m ${mm(pageW-14)} ${mm(pageH-58)} l S\n`;
     out+='0 0 0 rg\n';
     values.forEach(([name,value],i)=>{
-      const top=45+i*7;
+      const top=65+i*7;
       out+=text(name,164,top,7);
       // Courier is monospaced: right-align against a fixed column.
       const right=pageW-15;
@@ -968,22 +987,25 @@ function buildPrintPDF(){
     return s;
   }
   function artCmd(img,x0,y0){return `q ${mm(artW)} 0 0 ${mm(artH)} ${mm(x0)} ${mm(pageH-y0-artH)} cm /${img} Do Q\n`;}
-  let frontCmd='0 0 0 rg\n';
-  frontCmd+=lineText('FAMLI / J-CARD PRINT GUIDE',18,18,15,true);
-  frontCmd+=lineText('Two-sided cassette J-card  |  '+(paper==='a4'?'A4':'US Letter')+'  |  1:1 actual size',18,26,9);
-  frontCmd+=lineText('01   PRINT',18,40,10,true);
-  frontCmd+=lineText('Print BOTH pages at Actual Size / 100%. Disable Fit to Page.',18,47,9);
-  frontCmd+=lineText('Use duplex printing: flip on '+(duplex==='long'?'LONG':'SHORT')+' edge. Keep both pages upright.',18,53,9);
-  frontCmd+=lineText('02   PAPER',18,66,10,true);
-  frontCmd+=lineText('Try matte 160-200 gsm card stock, if supported by your printer.',18,73,9);
-  frontCmd+=lineText('For inkjet printing, choose the correct paper type / quality setting.',18,79,9);
-  frontCmd+=lineText('03   CUT + FOLD',18,92,10,true);
-  frontCmd+=lineText('Trim to the artwork boundary. Crop marks sit OUTSIDE the cut.',18,99,9);
-  frontCmd+=lineText('Score gently at both fold ticks, then fold around the cassette case.',18,105,9);
-  frontCmd+=lineText('04   CHECK ALIGNMENT',18,118,10,true);
-  frontCmd+=lineText('First test on ordinary paper. Hold to light to inspect registration.',18,125,9);
-  frontCmd+=lineText('Home duplex printers can shift the reverse by a few millimetres.',18,131,9);
-  frontCmd+=lineText('ARTWORK: 101.17 x 101.60 mm  /  FOLD AT 25.40 + 12.70 mm',18,143,8,true);
+   let frontCmd='0 0 0 rg\n';
+   // Brand-first editorial hierarchy: logo, title, subtitle, then instructions.
+   // The logo is rendered in charcoal on white for economical printing.
+   frontCmd+=`q ${mm(54)} 0 0 ${mm(14.73)} ${mm(17)} ${mm(pageH-14-14.73)} cm /ImLogo Do Q\n`;
+   frontCmd+=lineText('J-CARD PRINT GUIDE',18,37,13,true);
+   frontCmd+=lineText('Two-sided cassette J-card  |  '+(paper==='a4'?'A4':'US Letter')+'  |  1:1 actual size',18,45,8.5);
+   frontCmd+=lineText('01   PRINT',18,59,10,true);
+   frontCmd+=lineText('Print BOTH pages at Actual Size / 100%. Disable Fit to Page.',18,66,8.5);
+   frontCmd+=lineText('Use duplex printing: flip on '+(duplex==='long'?'LONG':'SHORT')+' edge. Keep both pages upright.',18,72,8.5);
+   frontCmd+=lineText('02   PAPER',18,84,10,true);
+   frontCmd+=lineText('Try matte 160-200 gsm card stock, if supported by your printer.',18,91,8.5);
+   frontCmd+=lineText('For inkjet printing, choose the correct paper type / quality setting.',18,97,8.5);
+   frontCmd+=lineText('03   CUT + FOLD',18,109,10,true);
+   frontCmd+=lineText('Trim to the artwork boundary. Crop marks sit OUTSIDE the cut.',18,116,8.5);
+   frontCmd+=lineText('Score gently at both fold ticks, then fold around the cassette case.',18,122,8.5);
+   frontCmd+=lineText('04   CHECK ALIGNMENT',18,134,10,true);
+   frontCmd+=lineText('First test on ordinary paper. Hold to light to inspect registration.',18,141,8.5);
+   frontCmd+=lineText('Home duplex printers can shift the reverse by a few millimetres.',18,147,8.5);
+   frontCmd+=lineText('ARTWORK: 101.17 x 101.60 mm  /  FOLD AT 25.40 + 12.70 mm',18,158,7.5,true);
   frontCmd+=parameterLegend();
   frontCmd+=artCmd('Im1',x,y)+rules(x,y,true);
   // Page 2's open half changes with the chosen duplex flip orientation.
@@ -1021,7 +1043,7 @@ function buildPrintPDF(){
   add(`<< /Type /Pages /Kids [${page1} 0 R ${page2} 0 R] /Count 2 >>`);
 
   for(const [im,content] of [[image1,content1],[image2,content2]])
-    add(`<< /Type /Page /Parent ${pagesId} 0 R /MediaBox [0 0 ${mm(pageW)} ${mm(pageH)}] /Resources << /XObject << /${im===image1?'Im1':'Im2'} ${im} 0 R /ImBig ${imageBig} 0 R /ImStrip ${imageStrip} 0 R >> /Font << /F ${font} 0 R /FB ${bold} 0 R /FM ${mono} 0 R >> >> /Contents ${content} 0 R >>`);
+    add(`<< /Type /Page /Parent ${pagesId} 0 R /MediaBox [0 0 ${mm(pageW)} ${mm(pageH)}] /Resources << /XObject << /${im===image1?'Im1':'Im2'} ${im} 0 R /ImBig ${imageBig} 0 R /ImStrip ${imageStrip} 0 R /ImLogo ${imageLogo} 0 R >> /Font << /F ${font} 0 R /FB ${bold} 0 R /FM ${mono} 0 R >> >> /Contents ${content} 0 R >>`);
   add(`<< /Type /Catalog /Pages ${pagesId} 0 R >>`);
   const chunks	=[ascii('%PDF-1.4\n%FAMLI\n')],
   		offsets =[0];let 
