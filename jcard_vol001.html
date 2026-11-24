@@ -168,7 +168,7 @@
 <body>
 	<header>
 		<strong>FamLi - practice volume 1</strong>
-		<span>J-CARD GENERATOR v1.0.17</span>
+		<span>J-CARD GENERATOR v1.0.18</span>
 	</header>
 	<div class="app">
 		<aside>
@@ -1029,11 +1029,12 @@ function buildPrintPDF(){
   backCmd+=lineText('One generated label, two common sticker formats.',guideX,guideTop+7,8);
   backCmd+=lineText('FULL-FACE LABEL',guideX,guideTop+17,8,true);
   backCmd+=artCmdExample('ImBig',guideX,guideTop+20,exampleW,exampleH);
-  backCmd+=lineText('NARROW STRIP',guideX,guideTop+60,8,true);
   backCmd+=artCmdExample('ImStrip',guideX,guideTop+58,exampleW,exampleH);
-  backCmd+=lineText('Your label stock determines the final crop and alignment.',guideX,guideTop+96,8);
-  backCmd+=lineText('Use the downloaded label PNG with your sticker template.',guideX,guideTop+102,8);
-  backCmd+=lineText('Position and scale as needed; keep title and logo visible.',guideX,guideTop+108,8);
+  // Draw text after the opaque example image so its white margins cannot hide it.
+  backCmd+=lineText('NARROW STRIP',guideX,guideTop+58,8,true);
+  backCmd+=lineText('Your label stock determines the final crop and alignment.',guideX,guideTop+76,8);
+  backCmd+=lineText('Use the downloaded label PNG with your sticker template.',guideX,guideTop+82,8);
+  backCmd+=lineText('Position and scale as needed; keep title and logo visible.',guideX,guideTop+88,8);
   function artCmdExample(img,x0,y0,w,h){return `q ${mm(w)} 0 0 ${mm(h)} ${mm(x0)} ${mm(pageH-y0-h)} cm /${img} Do Q\n`; }
   function streamObj(s){
   	const b=ascii(s);
