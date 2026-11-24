@@ -168,7 +168,7 @@
 <body>
 	<header>
 		<strong>FamLi - practice volume 1</strong>
-		<span>J-CARD GENERATOR v1.0.16</span>
+		<span>J-CARD GENERATOR v1.0.17</span>
 	</header>
 	<div class="app">
 		<aside>
@@ -213,11 +213,15 @@
             
             <div class="field">
             	<label>
-            		<span>TRIM + FOLD GUIDES</span>
-            		<input type="checkbox" id="guides" checked>
+            		<span>CUSTOM TEXT</span>
+            		<input type="checkbox" id="custom-enabled">
             	</label> 
             </div>
 
+            <div id="custom-fields" class="field" hidden>
+                <input type="text" id="custom-line1" maxlength="16" placeholder="Line 1 (16 characters)">
+                <input type="text" id="custom-line2" maxlength="16" placeholder="Line 2 (16 characters)" style="margin-top:6px">
+            </div>
             <div class="actions">
             	<button id="pdf" class="primary">
             		EXPORT PRINT PDF · 2 PAGES
@@ -271,6 +275,11 @@ const defaults={
 	backdropLightness:24
 };
 let state={...defaults};
+const customEnabled=document.getElementById('custom-enabled');
+const customInputs=['custom-line1','custom-line2'].map(id=>document.getElementById(id));
+function customLines(){return customEnabled.checked?customInputs.map(el=>el.value.trim().slice(0,16)).filter(Boolean):[];}
+customEnabled.onchange=()=>{document.getElementById('custom-fields').hidden=!customEnabled.checked;scheduleDraw(true);};
+customInputs.forEach(el=>el.addEventListener('input',()=>scheduleDraw(true)));
 let assets={};
 const canvas=document.getElementById('art'),
       ctx=canvas.getContext('2d');
@@ -568,6 +577,15 @@ function render(c,size,patternOnly=false,duplex='long'){
 	// The procedural field above is intentionally unchanged in this version.
 
 	const ink='#ffffff', panel=backdropColor();
+    const inscription=customLines();
+    if(inscription.length){
+      c.save();c.font="28px 'Lucida Console',Monaco,monospace";
+      const w=Math.max(...inscription.map(t=>c.measureText(t).width))+40;
+      const h=inscription.length*36+30;
+      c.fillStyle=panel;c.beginPath();c.roundRect(1122-w,1143-h,w,h,18);c.fill();
+      c.fillStyle=cssRGB(labelRGB());c.textAlign='right';c.textBaseline='middle';
+      inscription.forEach((t,i)=>c.fillText(t,1102,1143-h+15+18+i*36));c.restore();
+    }
 
 	c.fillStyle=panel;
 
@@ -702,6 +720,7 @@ function randomize(redraw=true){
     state.backdropHue=Math.floor(Math.random()*361);
     state.backdropSaturation=Math.floor(Math.random()*41);
     state.backdropLightness=12+Math.floor(Math.random()*25);
+    for(const [key] of controls) if(!backdropControls.has(key)) state[key]=Math.round(state[key]*1000)/1000;
     sync(redraw);
 }
 document.getElementById('random-desktop').onclick=randomize;
@@ -886,12 +905,12 @@ function buildPrintPDF(){
   if(Object.keys(files).some(k=>!assets[k])){alert('Artwork assets are still loading. Try again in a moment.');return;}
   const paper=document.getElementById('paper').value;
   const duplex=document.getElementById('duplex').value;
-  const guides=document.getElementById('guides').checked;
+  const guides=true;
   const pageW=paper==='a4'?210:215.9,pageH=paper==='a4'?297:279.4;
   const artW=101.1682,artH=101.6;
   const x=(pageW-artW)/2;
   // Instructions occupy the upper half; artwork occupies the lower half.
-  const y=pageH*.62;
+  const y=pageH-112;
   const yReverse=duplex==='short'?pageH-y-artH:y;
   const scale=2; // 2400px source raster, approximately 600 dpi at printed size.
   const front=document.createElement('canvas');front.width=1200*scale;front.height=1200*scale;
@@ -941,33 +960,19 @@ function buildPrintPDF(){
   function lineText(text,x,top,pt=9,isBold=false){return `BT /${isBold?'FB':'F'} ${pt} Tf 1 0 0 1 ${mm(x)} ${mm(pageH-top)} Tm (${esc(text)}) Tj ET\n`;}
   // Record the exact slider state used for this exported edition.
   // Values are captured when the PDF is generated, including manual adjustments.
-  function parameterLegend(){
-    const values=controls.map(([key,name])=>[
-      name,
-      backdropControls.has(key) ? String(Math.round(state[key])) : state[key].toFixed(3)
-    ]);
-    const text=(str,x,top,pt=7,font='FM')=>
-      `BT /${font} ${pt} Tf 1 0 0 1 ${mm(x)} ${mm(pageH-top)} Tm (${esc(str)}) Tj ET\n`;
-    let out='0 0 0 rg\n';
-    out+=text('GENERATIVE PARAMETERS',164,55,8,'FB');
-    out+='0.35 w 0.65 0.65 0.65 RG\n';
-    out+=`${mm(164)} ${mm(pageH-58)} m ${mm(pageW-14)} ${mm(pageH-58)} l S\n`;
-    out+='0 0 0 rg\n';
-    values.forEach(([name,value],i)=>{
-      const top=65+i*7;
-      out+=text(name,164,top,7);
-      // Courier is monospaced: right-align against a fixed column.
-      const right=pageW-15;
-      const charWidth=7*0.6/PDF_MM;
-      out+=text(value,right-value.length*charWidth,top,7);
+  function parameterLegend(left,top,width,step=5.2){
+    const text=(str,x,t,pt=7,font='FM')=>`BT /${font} ${pt} Tf 1 0 0 1 ${mm(x)} ${mm(pageH-t)} Tm (${esc(str)}) Tj ET\n`;
+    const rule=t=>`0.35 w 0.65 0.65 0.65 RG ${mm(left)} ${mm(pageH-t)} m ${mm(left+width)} ${mm(pageH-t)} l S\n`;
+    let out='0 0 0 rg\n'+text('GENERATIVE PARAMETERS',left,top,7,'FB')+rule(top+3);
+    controls.forEach(([key,name],i)=>{
+      const value=controlDisplay(key),t=top+9+i*step;
+      out+='0 0 0 rg\n'+text(name,left,t)+text(value,left+width-value.length*7*.6/PDF_MM,t);
     });
-    // Project URL below the parameter list, within the right-hand column.
-    out+='0.35 w 0.65 0.65 0.65 RG\n';
-    out+=`${mm(164)} ${mm(pageH-145)} m ${mm(pageW-14)} ${mm(pageH-145)} l S\n`;
-    out+='0.22 0.22 0.22 rg\n';
-    out+=text('famli.dev/jcard_vol001',164,152,6,'FM');
-    return out;
+    const bottom=top+9+10*step+5;
+    return out+rule(bottom)+'0.22 0.22 0.22 rg\n'+text('famli.dev/jcard_vol001',left,bottom+6,6);
   }
+  function cutLine(x1,t1,x2,t2){return `0.45 w 0.4 0.4 0.4 RG [4 3] 0 d ${mm(x1)} ${mm(pageH-t1)} m ${mm(x2)} ${mm(pageH-t2)} l S [] 0 d\n`;}
+  function cutBox(left,top,w,h){return cutLine(left,top,left+w,top)+cutLine(left+w,top,left+w,top+h)+cutLine(left+w,top+h,left,top+h)+cutLine(left,top+h,left,top);}
   function rules(cx,cy,includeFold,mirrorFold=false){
     if(!guides)return '';
     const L=cx,R=cx+artW,T=cy,B=cy+artH,g=3.5,l=3;
@@ -992,43 +997,43 @@ function buildPrintPDF(){
     return s;
   }
   function artCmd(img,x0,y0){return `q ${mm(artW)} 0 0 ${mm(artH)} ${mm(x0)} ${mm(pageH-y0-artH)} cm /${img} Do Q\n`;}
-   let frontCmd='0 0 0 rg\n';
-   // Brand-first editorial hierarchy: logo, title, subtitle, then instructions.
-   // The logo is rendered in charcoal on white for economical printing.
-   frontCmd+=`q ${mm(54)} 0 0 ${mm(14.73)} ${mm(17)} ${mm(pageH-14-14.73)} cm /ImLogo Do Q\n`;
-   frontCmd+=lineText('J-CARD PRINT GUIDE',18,37,13,true);
-   frontCmd+=lineText('Two-sided cassette J-card  |  '+(paper==='a4'?'A4':'US Letter')+'  |  1:1 actual size',18,45,8.5);
-   frontCmd+=lineText('01   PRINT',18,59,10,true);
-   frontCmd+=lineText('Print BOTH pages at Actual Size / 100%. Disable Fit to Page.',18,66,8.5);
-   frontCmd+=lineText('Use duplex printing: flip on '+(duplex==='long'?'LONG':'SHORT')+' edge. Keep both pages upright.',18,72,8.5);
-   frontCmd+=lineText('02   PAPER',18,84,10,true);
-   frontCmd+=lineText('Try matte 160-200 gsm card stock, if supported by your printer.',18,91,8.5);
-   frontCmd+=lineText('For inkjet printing, choose the correct paper type / quality setting.',18,97,8.5);
-   frontCmd+=lineText('03   CUT + FOLD',18,109,10,true);
-   frontCmd+=lineText('Trim to the artwork boundary. Crop marks sit OUTSIDE the cut.',18,116,8.5);
-   frontCmd+=lineText('Score gently at both fold ticks, then fold around the cassette case.',18,122,8.5);
-   frontCmd+=lineText('04   CHECK ALIGNMENT',18,134,10,true);
-   frontCmd+=lineText('First test on ordinary paper. Hold to light to inspect registration.',18,141,8.5);
-   frontCmd+=lineText('Home duplex printers can shift the reverse by a few millimetres.',18,147,8.5);
-   frontCmd+=lineText('ARTWORK: 101.17 x 101.60 mm  /  FOLD AT 25.40 + 12.70 mm',18,158,7.5,true);
-  frontCmd+=parameterLegend();
+  const cutY=y-10, reverseCut=duplex==='long'?cutY:pageH-cutY;
+  const cardW=48,cardH=88,cardTop=48,cardX=pageW-8-cardW;
+  const backCardX=duplex==='long'?pageW-cardX-cardW:cardX;
+  const backCardTop=duplex==='long'?cardTop:pageH-cardTop-cardH;
+  const legendX=cardX-47;
+  let frontCmd='0 0 0 rg\n';
+  frontCmd+=`q ${mm(54)} 0 0 ${mm(14.73)} ${mm(17)} ${mm(pageH-14-14.73)} cm /ImLogo Do Q\n`;
+  frontCmd+=lineText('J-CARD PRINT GUIDE',18,37,13,true);
+  frontCmd+=lineText('Two-sided cassette J-card | '+(paper==='a4'?'A4':'US Letter')+' | 1:1 actual size',18,45,8);
+  const sections=[
+    ['01   PRINT','Print both pages at Actual Size / 100%.','Disable Fit to Page. Flip on '+duplex.toUpperCase()+' edge.'],
+    ['02   PAPER','Try matte 160-200 gsm card stock.','Select the appropriate printer paper setting.'],
+    ['03   CUT + FOLD','Cut along the separation line first.','Trim artwork; score at both fold ticks.'],
+    ['04   CHECK ALIGNMENT','Test on ordinary paper and hold to light.','Duplex registration may vary by a few mm.']
+  ];
+  sections.forEach(([heading,l1,l2],i)=>{const t=58+i*22;frontCmd+=lineText(heading,18,t,9,true)+lineText(l1,18,t+6,8)+lineText(l2,18,t+11,8);});
+  frontCmd+=lineText('ARTWORK: 101.17 x 101.60 mm / FOLDS: 25.40 + 12.70 mm',18,145,7,true);
+  frontCmd+=parameterLegend(legendX,58,40);
+  customLines().forEach((t,i)=>{frontCmd+=lineText(t.replace(/[^\x20-\x7e]/g,'?'),legendX,43+i*5,9,true);});
+  frontCmd+=cutLine(8,cutY,pageW-8,cutY)+lineText('CUT HERE FIRST',8,cutY-2,7,true);
   frontCmd+=artCmd('Im1',x,y)+rules(x,y,true);
-  // Page 2's open half changes with the chosen duplex flip orientation.
-  // Keep the guide clear of the actual-size J-card and all trim/fold ticks.
-  const guideTop=duplex==='long'?18:125;
-  const exampleW=79,exampleH=exampleW*460/960;
-  const exampleLeft=18,exampleRight=pageW-18-exampleW;
   let backCmd=artCmd('Im2',x,yReverse)+rules(x,yReverse,true,duplex==='long');
+  backCmd+=cutLine(8,reverseCut,pageW-8,reverseCut);
+  backCmd+=cutBox(backCardX,backCardTop,cardW,cardH)+parameterLegend(backCardX+4,backCardTop+8,40);
+  const guideTop=duplex==='long'?18:reverseCut+13;
+  const guideX=duplex==='long'?68:18;
+  const exampleW=68,exampleH=exampleW*460/960;
   backCmd+='0 0 0 rg\n';
-  backCmd+=lineText('CASSETTE LABEL / CROPPING GUIDE',18,guideTop,13,true);
-  backCmd+=lineText('One generated label, two common sticker formats.',18,guideTop+8,9);
-  backCmd+=lineText('FULL-FACE LABEL',exampleLeft,guideTop+18,8,true);
-  backCmd+=lineText('NARROW STRIP',exampleRight,guideTop+18,8,true);
-  backCmd+=artCmdExample('ImBig',exampleLeft,guideTop+22,exampleW,exampleH);
-  backCmd+=artCmdExample('ImStrip',exampleRight,guideTop+22,exampleW,exampleH);
-  backCmd+=lineText('Your label stock determines the final crop and alignment.',18,guideTop+70,9);
-  backCmd+=lineText('Use the downloaded label PNG with your sticker template.',18,guideTop+77,9);
-  backCmd+=lineText('Position and scale as needed; keep the title and logo visible.',18,guideTop+84,9);
+  backCmd+=lineText('CASSETTE LABEL / CROPPING GUIDE',guideX,guideTop,11,true);
+  backCmd+=lineText('One generated label, two common sticker formats.',guideX,guideTop+7,8);
+  backCmd+=lineText('FULL-FACE LABEL',guideX,guideTop+17,8,true);
+  backCmd+=artCmdExample('ImBig',guideX,guideTop+20,exampleW,exampleH);
+  backCmd+=lineText('NARROW STRIP',guideX,guideTop+60,8,true);
+  backCmd+=artCmdExample('ImStrip',guideX,guideTop+58,exampleW,exampleH);
+  backCmd+=lineText('Your label stock determines the final crop and alignment.',guideX,guideTop+96,8);
+  backCmd+=lineText('Use the downloaded label PNG with your sticker template.',guideX,guideTop+102,8);
+  backCmd+=lineText('Position and scale as needed; keep title and logo visible.',guideX,guideTop+108,8);
   function artCmdExample(img,x0,y0,w,h){return `q ${mm(w)} 0 0 ${mm(h)} ${mm(x0)} ${mm(pageH-y0-h)} cm /${img} Do Q\n`; }
   function streamObj(s){
   	const b=ascii(s);
